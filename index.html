@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colegio Labastida - SmartCoop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F4F6F9; }
+        .font-serif-title { font-family: 'Playfair Display', serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-slate-800 p-2 md:p-6 min-h-screen">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <header class="bg-[#00205B] text-white p-6 md:p-8 rounded-3xl shadow-xl border-b-4 border-[#D4AF37] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="bg-[#9E1B32] text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full">Sistema Oficial</span>
+                    <span class="text-[#D4AF37] text-xs font-semibold">v3.2 Producción</span>
+                </div>
+                <h1 class="font-serif-title text-2xl md:text-3xl font-bold mt-1">Colegio Labastida - SmartCoop</h1>
+                <p class="text-blue-200 text-sm mt-1">Gestión de Vales, Cooperativa y Control de Deudores</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button id="btn-diagnostic-toggle" onclick="toggleDiagnostic()" class="bg-[#D4AF37] hover:bg-amber-500 text-[#00205B] font-bold px-4 py-2.5 rounded-2xl shadow-lg transition flex items-center gap-2 text-xs">
+                    <i class="fa-solid fa-plug-circle-bolt"></i>
+                    <span>Diagnóstico de Conexión</span>
+                </button>
+
+                <div id="user-navbar-info" class="hidden items-center gap-3 bg-blue-900/60 border border-blue-700/50 p-2 pl-4 rounded-2xl">
+                    <div class="text-right text-xs">
+                        <div id="nav-user-name" class="font-bold text-white">---</div>
+                        <div id="nav-user-role" class="text-amber-400 text-[10px] uppercase">---</div>
+                    </div>
+                    <button onclick="logout()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold p-2.5 rounded-xl transition text-xs" title="Cerrar Sesión">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section id="section-diagnostic" class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-slate-100 pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-[#00205B] flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-[#D4AF37]"></i>
+                        Diagnóstico de Conexión
+                    </h2>
+                    <p class="text-xs text-slate-500">Verificación e integración con la hoja de Google Sheets</p>
+                </div>
+                <div id="connection-status-badge" class="inline-flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-2xl text-xs font-bold border border-slate-200">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                    <span>Estado: Sin probar</span>
+                </div>
+            </div>
+
+            <!-- Entrada de Endpoint -->
+            <div class="bg-slate-900 text-slate-200 p-3.5 rounded-2xl text-xs font-mono">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-2">
+                    <input type="text" id="endpoint-input" value="https://script.google.com/macros/s/AKfycbzgWuCriN-5FSboz4QfM2mpmpGyyBrRG7tzBRJ1sLsKRS8pSVIPuAyKqRuOeBoS42nl/exec" class="bg-slate-800 text-cyan-300 px-3 py-1.5 rounded-lg w-full text-xs font-mono border border-slate-700 focus:outline-none focus:border-amber-400">
+                    <button onclick="updateEndpoint()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs transition shrink-0">Guardar y Probar</button>
+                </div>
+            </div>
+
+            <!-- Consola de Logs -->
+            <div class="space-y-1">
+                <div class="flex justify-between items-center text-[11px] text-slate-500">
+                    <span class="font-bold uppercase tracking-wider"><i class="fa-solid fa-terminal mr-1"></i> Consola del Sistema</span>
+                    <button onclick="clearConsole()" class="hover:text-slate-800 underline">Limpiar Consola</button>
+                </div>
+                <div id="diagnostic-console" class="bg-slate-950 text-emerald-400 p-3 rounded-xl font-mono text-xs h-28 overflow-y-auto space-y-0.5 border border-slate-800">
+                    <div class="text-slate-500">> Presiona "Guardar y Probar" para iniciar verificación...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-login" class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-[#00205B]">Acceso al Sistema Colegio Labastida</h3>
+                    <p class="text-xs text-slate-500">Selecciona una cuenta de prueba o ingresa tus credenciales oficiales</p>
+                </div>
+                <span class="bg-blue-50 text-[#00205B] text-xs font-bold px-3 py-1 rounded-xl">Acceso Multirrol</span>
+            </div>
+
+            <!-- Accesos rápidos de demostración -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button onclick="quickLogin('dir_preescolar', '1234')" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 rounded-2xl text-left transition group">
+                    <div class="text-xs font-bold text-[#00205B]">Dir. Preescolar</div>
+                    <div class="text-[10px] text-slate-400">dir_preescolar</div>
+                </button>
+                <button onclick="quickLogin('dir_primaria', '1234')" class="p-3 bg-slate-50 hover:bg-blue-50 border border-slate-200 rounded-2xl text-left transition group">
+                    <div class="text-xs font-bold text-[#00205B]">Dir. Primaria</div>
+                    <div class="text-[10px] text-slate-400">dir_primaria</div>
+                </button>
+                <button onclick="quickLogin('coop', '1234')" class="p-3 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-2xl text-left transition group">
+                    <div class="text-xs font-bold text-amber-800">Cooperativa</div>
+                    <div class="text-[10px] text-slate-400">coop</div>
+                </button>
+                <button onclick="quickLogin('finanzas', '1234')" class="p-3 bg-slate-50 hover:bg-rose-50 border border-slate-200 rounded-2xl text-left transition group">
+                    <div class="text-xs font-bold text-[#9E1B32]">Dirección General</div>
+                    <div class="text-[10px] text-slate-400">finanzas</div>
+                </button>
+            </div>
+
+            <!-- Formulario de inicio de sesión -->
+            <form id="login-form" onsubmit="processLogin(event)" class="max-w-md mx-auto space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <div id="login-error" class="hidden bg-rose-50 text-[#9E1B32] text-xs font-bold p-3 rounded-xl border border-rose-200 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Usuario o contraseña incorrectos.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Usuario</label>
+                    <input type="text" id="login-user" value="dir_preescolar" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#00205B]" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Contraseña</label>
+                    <input type="password" id="login-pass" value="1234" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#00205B]" required>
+                </div>
+                <button type="submit" class="w-full bg-[#00205B] hover:bg-blue-900 text-white font-bold py-3 rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                </button>
+            </form>
+        </section>
+
+        <main id="app-director" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-[#00205B] flex items-center gap-2">
+                        <i class="fa-solid fa-ticket-simple text-[#D4AF37]"></i>
+                        Emisión de Vales de Consumo
+                    </h2>
+                    <p class="text-xs text-slate-500">Autorización de consumos escolares para alumnos</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="refreshDataFromSheets()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold px-3 py-2.5 rounded-xl transition flex items-center gap-2 border border-amber-300">
+                        <i class="fa-solid fa-arrows-rotate"></i> Actualizar Catálogos
+                    </button>
+                    <button onclick="openNewStudentModal()" class="bg-[#00205B] hover:bg-blue-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-[#D4AF37]"></i> Registrar Alumno
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Selección de Alumno y Catálogo -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">1. Seleccionar Alumno Beneficiario</label>
+                        <select id="select-student" class="w-full p-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-[#00205B]">
+                            <option value="">-- Cargar Alumnos --</option>
+                        </select>
+                    </div>
+
+                    <!-- Menú de Productos -->
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600">2. Menú de Productos de la Cooperativa</h3>
+                            <span id="sync-status-badge" class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Sincronización Sheets</span>
+                        </div>
+                        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <!-- Productos inyectados desde JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carrito / Detalle del Vale -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 h-fit">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b pb-3">
+                            <h3 class="font-bold text-[#00205B] text-sm">Resumen del Vale</h3>
+                            <span id="cart-item-count" class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">0 artículos</span>
+                        </div>
+                        <div id="cart-items-list" class="space-y-2 max-h-60 overflow-y-auto text-xs">
+                            <div class="text-slate-400 italic text-center py-4">Agrega productos del menú...</div>
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-4 space-y-4">
+                        <div class="flex justify-between items-center text-base font-bold">
+                            <span class="text-slate-700">Total a Autorizar:</span>
+                            <span id="cart-total-price" class="text-[#9E1B32] text-xl">$0.00</span>
+                        </div>
+                        <button onclick="submitVale()" class="w-full bg-[#9E1B32] hover:bg-rose-900 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Autorizar y Enviar Pedido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <main id="app-coop" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-[#00205B] flex items-center gap-2">
+                        <i class="fa-solid fa-store text-[#D4AF37]"></i>
+                        Tablero de Pedidos de Cooperativa
+                    </h2>
+                    <p class="text-xs text-slate-500">Atención y entrega de vales emitidos en tiempo real</p>
+                </div>
+                <button onclick="loadValesAndPagos()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-rotate"></i> Actualizar Pedidos
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- CREADO -->
+                <div class="bg-slate-100/70 p-4 rounded-3xl border border-slate-200 space-y-3">
+                    <div class="flex items-center justify-between font-bold text-xs text-slate-700 uppercase tracking-wider">
+                        <span><i class="fa-solid fa-clock text-amber-500 mr-1.5"></i> Nuevos Pedidos</span>
+                        <span id="count-creado" class="bg-amber-200 text-amber-900 text-[10px] px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-creado" class="space-y-3 min-h-[300px]"></div>
+                </div>
+
+                <!-- EN PREPARACIÓN -->
+                <div class="bg-slate-100/70 p-4 rounded-3xl border border-slate-200 space-y-3">
+                    <div class="flex items-center justify-between font-bold text-xs text-slate-700 uppercase tracking-wider">
+                        <span><i class="fa-solid fa-fire text-blue-500 mr-1.5"></i> En Preparación</span>
+                        <span id="count-preparacion" class="bg-blue-200 text-blue-900 text-[10px] px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-preparacion" class="space-y-3 min-h-[300px]"></div>
+                </div>
+
+                <!-- ENTREGADO -->
+                <div class="bg-slate-100/70 p-4 rounded-3xl border border-slate-200 space-y-3">
+                    <div class="flex items-center justify-between font-bold text-xs text-slate-700 uppercase tracking-wider">
+                        <span><i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i> Entregados</span>
+                        <span id="count-entregado" class="bg-emerald-200 text-emerald-900 text-[10px] px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-entregado" class="space-y-3 min-h-[300px]"></div>
+                </div>
+            </div>
+        </main>
+
+        <main id="app-finanzas" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-[#00205B] flex items-center gap-2">
+                        <i class="fa-solid fa-vault text-[#D4AF37]"></i>
+                        Control Financiero y Estado de Cuenta por Familia
+                    </h2>
+                    <p class="text-xs text-slate-500">Registro de abonos, saldos pendientes y cobranza</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-bold text-slate-600">Filtrar por Dirección:</label>
+                    <select id="filter-direction" onchange="renderFinanzas()" class="p-2 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:border-[#00205B]">
+                        <option value="ALL">Todas las Direcciones</option>
+                        <option value="Dirección Preescolar">Preescolar</option>
+                        <option value="Dirección Primaria">Primaria</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="families-finances-container" class="space-y-4">
+                <!-- Llenado dinámico -->
+            </div>
+        </main>
+
+    </div>
+
+    <!-- MODAL REGISTRO NUEVO ALUMNO -->
+    <div id="modal-student" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-[#00205B] text-base">Registrar Nuevo Alumno</h3>
+                <button onclick="closeNewStudentModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveNewStudent(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nombre Completo del Alumno</label>
+                    <input type="text" id="new-student-name" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Grado / Grupo</label>
+                    <input type="text" id="new-student-grado" placeholder="Ej. 3°A Preescolar" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Asignar Familia</label>
+                    <select id="new-student-family" onchange="toggleNewFamilyInput(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                        <!-- Carga dinámica -->
+                    </select>
+                </div>
+                <div id="new-family-input-container" class="hidden">
+                    <label class="block text-xs font-bold text-amber-800 mb-1">Nombre de la Nueva Familia</label>
+                    <input type="text" id="new-family-name" placeholder="Ej. Familia López Soto" class="w-full px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 text-sm">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeNewStudentModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#00205B] text-white hover:bg-blue-900 shadow">Guardar Alumno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO DE ABONO -->
+    <div id="modal-payment" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-[#00205B] text-base">Registrar Abono o Pago</h3>
+                <button onclick="closePaymentModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="submitPayment(event)" class="space-y-3">
+                <input type="hidden" id="pay-family-id">
+                <input type="hidden" id="pay-student-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Alumno</label>
+                    <input type="text" id="pay-student-name" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 text-sm font-bold text-slate-700" readonly>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Monto del Abono ($)</label>
+                    <input type="number" step="0.50" id="pay-amount" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold text-emerald-600" placeholder="0.00" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nota / Referencia</label>
+                    <input type="text" id="pay-note" placeholder="Ej. Pago en efectivo en administración" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closePaymentModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow">Guardar Abono</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    let APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgWuCriN-5FSboz4QfM2mpmpGyyBrRG7tzBRJ1sLsKRS8pSVIPuAyKqRuOeBoS42nl/exec";
+
+    let currentUser = null;
+    let catalogFamilias = [];
+    let catalogEstudiantes = [];
+    let catalogProductos = []; // Se cargan en tiempo real desde Google Sheets
+
+    let valesData = [];
+    let pagosData = [];
+    let currentCart = [];
+
+    // Mapeo de íconos FontAwesome para productos de Google Sheets
+    function parseIcon(iconStr, nameStr = "") {
+        const str = (iconStr || "").trim().toLowerCase();
+        const name = (nameStr || "").trim().toLowerCase();
+        
+        if (str.startsWith("fa-")) return str;
+
+        const map = {
+            "pizza": "fa-pizza-slice",
+            "pizzas": "fa-pizza-slice",
+            "torta": "fa-burger",
+            "tortas": "fa-burger",
+            "sandwich": "fa-burger",
+            "hamburguesa": "fa-burger",
+            "lonche": "fa-bread-slice",
+            "mollete": "fa-bread-slice",
+            "jugo": "fa-bottle-water",
+            "agua": "fa-bottle-water",
+            "refresco": "fa-bottle-droplet",
+            "soda": "fa-bottle-droplet",
+            "licuado": "fa-glass-water",
+            "smoothie": "fa-glass-water",
+            "cafe": "fa-mug-hot",
+            "té": "fa-mug-hot",
+            "galleta": "fa-cookie",
+            "galletas": "fa-cookie-bite",
+            "pastel": "fa-cake-candles",
+            "helado": "fa-ice-cream",
+            "fruta": "fa-apple-whole",
+            "manzana": "fa-apple-whole",
+            "platano": "fa-basket-shopping",
+            "ensalada": "fa-bowl-rice",
+            "papas": "fa-box",
+            "chips": "fa-box",
+            "snack": "fa-cookie-bite"
+        };
+
+        if (map[str]) return map[str];
+
+        for (let key in map) {
+            if (name.includes(key)) return map[key];
+        }
+
+        return "fa-utensils";
+    }
+
+    // Mapeo de colores Tailwind para productos de Google Sheets
+    function parseColor(colorStr, nameStr = "") {
+        const str = (colorStr || "").trim().toLowerCase();
+        const name = (nameStr || "").trim().toLowerCase();
+
+        if (str.startsWith("text-")) return str;
+
+        const colorMap = {
+            "rojo": "text-rose-500",
+            "rosa": "text-pink-500",
+            "naranja": "text-orange-500",
+            "amarillo": "text-amber-500",
+            "verde": "text-emerald-500",
+            "azul": "text-blue-500",
+            "morado": "text-purple-500",
+            "cafe": "text-amber-800",
+            "gris": "text-slate-500",
+            "negro": "text-slate-900"
+        };
+
+        if (colorMap[str]) return colorMap[str];
+
+        if (name.includes("pizza") || name.includes("torta") || name.includes("sandwich")) return "text-amber-600";
+        if (name.includes("jugo") || name.includes("agua") || name.includes("naranja")) return "text-orange-500";
+        if (name.includes("fruta") || name.includes("fresa") || name.includes("manzana")) return "text-rose-500";
+        if (name.includes("ensalada") || name.includes("verde")) return "text-emerald-500";
+
+        return "text-slate-700";
+    }
+
+    function logConsole(msg, type = "info") {
+        const consoleEl = document.getElementById('diagnostic-console');
+        if (!consoleEl) return;
+        const line = document.createElement('div');
+        const time = new Date().toLocaleTimeString('es-MX');
+        let colorClass = "text-emerald-400";
+        if (type === "warn") colorClass = "text-amber-300";
+        if (type === "error") colorClass = "text-rose-400 font-bold";
+        if (type === "highlight") colorClass = "text-cyan-300 font-bold";
+        line.className = `${colorClass}`;
+        line.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+        consoleEl.appendChild(line);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function clearConsole() {
+        document.getElementById('diagnostic-console').innerHTML = `<div class="text-slate-500">> Consola de diagnóstico limpia...</div>`;
+    }
+
+    function toggleDiagnostic() {
+        const diag = document.getElementById('section-diagnostic');
+        diag.classList.toggle('hidden');
+    }
+
+    function updateEndpoint() {
+        APPS_SCRIPT_URL = document.getElementById('endpoint-input').value.trim();
+        logConsole(`Servidor actualizado a: ${APPS_SCRIPT_URL}`, "highlight");
+        refreshDataFromSheets();
+    }
+
+    async function apiPost(payload) {
+        if (!APPS_SCRIPT_URL) return null;
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload),
+                redirect: "follow"
+            });
+            const rawText = await response.text();
+            if (rawText.trim().startsWith("<") || rawText.includes("<!DOCTYPE")) {
+                logConsole("El servidor devolvió una página HTML en lugar de JSON. Verifica los permisos de la App Web de Google Apps Script.", "error");
+                return { isHtml: true };
+            }
+            return { isHtml: false, data: JSON.parse(rawText) };
+        } catch (err) {
+            logConsole(`Error en la comunicación de red: ${err.message}`, "error");
+            return null;
+        }
+    }
+
+    async function refreshDataFromSheets() {
+        logConsole("Solicitando productos y datos en tiempo real desde Google Sheets...", "info");
+        const res = await apiPost({ action: "getCatalogosYDatos" });
+        
+        const badge = document.getElementById('connection-status-badge');
+
+        if (res && !res.isHtml && res.data && res.data.success) {
+            badge.className = "inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 px-4 py-2 rounded-2xl text-xs font-bold border border-emerald-300";
+            badge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span>Conectado a Sheets</span>`;
+
+            // Cargar únicamente los productos reales desde la hoja
+            if (res.data.productos && res.data.productos.length > 0) {
+                catalogProductos = res.data.productos.map(p => {
+                    const prodName = p.name || p.Nombre || p.Producto || "Producto sin nombre";
+                    return {
+                        id: p.id || p.ID || `PROD-${Math.random()}`,
+                        name: prodName,
+                        price: parseFloat(p.price || p.Precio || 0),
+                        icon: parseIcon(p.icon || p.Icono, prodName),
+                        color: parseColor(p.color || p.Color, prodName)
+                    };
+                });
+            } else {
+                catalogProductos = [];
+            }
+
+            if (res.data.estudiantes && res.data.estudiantes.length > 0) {
+                catalogEstudiantes = res.data.estudiantes.map(e => ({
+                    id: e.id || e.ID,
+                    familyId: e.familyId || e.FamiliaID || e.ID_Familia,
+                    name: e.name || e.Nombre,
+                    grado: e.grado || e.Grado || "General"
+                }));
+            } else {
+                catalogEstudiantes = [];
+            }
+
+            if (res.data.familias && res.data.familias.length > 0) {
+                catalogFamilias = res.data.familias.map(f => ({
+                    id: f.id || f.ID,
+                    name: f.name || f.Nombre
+                }));
+            } else {
+                catalogFamilias = [];
+            }
+
+            if (res.data.vales) valesData = res.data.vales;
+            if (res.data.pagos) pagosData = res.data.pagos;
+
+            logConsole(`¡Sincronización exitosa! (${catalogProductos.length} productos reales cargados)`, "highlight");
+            renderProductsGrid();
+            renderStudentsSelect();
+            if (currentUser && currentUser.role === 'cooperativa') renderKanban();
+            if (currentUser && currentUser.role === 'finanzas') renderFinanzas();
+        } else {
+            badge.className = "inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-2xl text-xs font-bold border border-amber-300";
+            badge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span>Error de Conexión</span>`;
+            logConsole("No se pudieron cargar los datos desde Google Sheets. Verifica la URL o los permisos.", "error");
+        }
+    }
+
+    function quickLogin(user, pass) {
+        document.getElementById('login-user').value = user;
+        document.getElementById('login-pass').value = pass;
+        processLogin(new Event('submit'));
+    }
+
+    async function processLogin(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const u = document.getElementById('login-user').value.trim();
+        const p = document.getElementById('login-pass').value.trim();
+        const err = document.getElementById('login-error');
+
+        err.classList.add('hidden');
+        logConsole(`Autenticando usuario: ${u}...`, "info");
+
+        const res = await apiPost({ action: "login", user: u, pass: p });
+
+        if (res && !res.isHtml && res.data && res.data.success) {
+            currentUser = { user: u, role: res.data.rol, name: res.data.nombre };
+            logConsole(`¡Sesión válida! Rol asignado: ${currentUser.role}`, "highlight");
+            setupDashboardForUser();
+        } else {
+            const mockRoles = {
+                'dir_preescolar': { role: 'director', name: 'Dirección Preescolar' },
+                'dir_primaria': { role: 'director', name: 'Dirección Primaria' },
+                'coop': { role: 'cooperativa', name: 'Encargado Cooperativa' },
+                'finanzas': { role: 'finanzas', name: 'Dirección General' }
+            };
+            if (mockRoles[u] && p === '1234') {
+                currentUser = { user: u, role: mockRoles[u].role, name: mockRoles[u].name };
+                logConsole(`Sesión iniciada para: ${currentUser.name}`, "info");
+                setupDashboardForUser();
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+    }
+
+    function setupDashboardForUser() {
+        document.getElementById('section-login').classList.add('hidden');
+        document.getElementById('section-diagnostic').classList.add('hidden');
+        
+        const nav = document.getElementById('user-navbar-info');
+        nav.classList.remove('hidden');
+        nav.classList.add('flex');
+        document.getElementById('nav-user-name').innerText = currentUser.name;
+        document.getElementById('nav-user-role').innerText = currentUser.role;
+
+        document.getElementById('app-director').classList.add('hidden');
+        document.getElementById('app-coop').classList.add('hidden');
+        document.getElementById('app-finanzas').classList.add('hidden');
+
+        refreshDataFromSheets();
+
+        if (currentUser.role === 'director') {
+            document.getElementById('app-director').classList.remove('hidden');
+            renderStudentsSelect();
+            renderProductsGrid();
+        } else if (currentUser.role === 'cooperativa') {
+            document.getElementById('app-coop').classList.remove('hidden');
+            loadValesAndPagos();
+        } else if (currentUser.role === 'finanzas') {
+            document.getElementById('app-finanzas').classList.remove('hidden');
+            loadValesAndPagos();
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('user-navbar-info').classList.add('hidden');
+        document.getElementById('app-director').classList.add('hidden');
+        document.getElementById('app-coop').classList.add('hidden');
+        document.getElementById('app-finanzas').classList.add('hidden');
+        document.getElementById('section-login').classList.remove('hidden');
+    }
+
+    function renderStudentsSelect() {
+        const select = document.getElementById('select-student');
+        select.innerHTML = `<option value="">-- Seleccionar Alumno --</option>`;
+        catalogEstudiantes.forEach(est => {
+            select.innerHTML += `<option value="${est.id}">${est.name} (${est.grado})</option>`;
+        });
+    }
+
+    function renderProductsGrid() {
+        const grid = document.getElementById('products-grid');
+        grid.innerHTML = '';
+        if (catalogProductos.length === 0) {
+            grid.innerHTML = `<div class="col-span-3 text-center text-slate-400 py-6 text-xs">No hay productos registrados en Google Sheets o aún se están cargando.</div>`;
+            return;
+        }
+        catalogProductos.forEach(p => {
+            grid.innerHTML += `
+                <button onclick="addToCart('${p.id}')" class="p-3 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 rounded-2xl text-left transition transform hover:-translate-y-0.5 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <i class="fa-solid ${p.icon} ${p.color} text-lg"></i>
+                        <span class="text-xs font-bold text-[#9E1B32]">$${p.price.toFixed(2)}</span>
+                    </div>
+                    <div class="text-xs font-bold text-slate-800">${p.name}</div>
+                </button>
+            `;
+        });
+    }
+
+    function addToCart(prodId) {
+        const prod = catalogProductos.find(p => p.id === prodId);
+        if (!prod) return;
+        const item = currentCart.find(i => i.id === prodId);
+        if (item) item.qty++;
+        else currentCart.push({ ...prod, qty: 1 });
+        updateCartUI();
+    }
+
+    function updateCartUI() {
+        const list = document.getElementById('cart-items-list');
+        const count = document.getElementById('cart-item-count');
+        const totalEl = document.getElementById('cart-total-price');
+
+        if (currentCart.length === 0) {
+            list.innerHTML = `<div class="text-slate-400 italic text-center py-4">Agrega productos del menú...</div>`;
+            count.innerText = "0 artículos";
+            totalEl.innerText = "$0.00";
+            return;
+        }
+
+        let total = 0;
+        let itemsCount = 0;
+        list.innerHTML = '';
+
+        currentCart.forEach(item => {
+            const sub = item.price * item.qty;
+            total += sub;
+            itemsCount += item.qty;
+            list.innerHTML += `
+                <div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl">
+                    <div>
+                        <div class="font-bold text-slate-800">${item.name}</div>
+                        <div class="text-[10px] text-slate-400">$${item.price.toFixed(2)} x ${item.qty}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-700">$${sub.toFixed(2)}</span>
+                        <button onclick="removeFromCart('${item.id}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </div>
+                </div>
+            `;
+        });
+
+        count.innerText = `${itemsCount} artículos`;
+        totalEl.innerText = `$${total.toFixed(2)}`;
+    }
+
+    function removeFromCart(prodId) {
+        currentCart = currentCart.filter(i => i.id !== prodId);
+        updateCartUI();
+    }
+
+    async function submitVale() {
+        const studentId = document.getElementById('select-student').value;
+        if (!studentId) return alert("Por favor selecciona a un alumno beneficiario.");
+        if (currentCart.length === 0) return alert("Agrega al menos un producto al vale de consumo.");
+
+        const student = catalogEstudiantes.find(e => e.id === studentId);
+        const total = currentCart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+        const itemsStr = currentCart.map(i => `${i.qty}x ${i.name}`).join(', ');
+
+        const newVale = {
+            id: "VAL-" + Math.floor(10000 + Math.random()*90000),
+            familyId: student.familyId,
+            studentId: student.id,
+            studentName: student.name,
+            items: itemsStr,
+            total: total,
+            status: "Creado",
+            createdBy: currentUser.name,
+            date: new Date().toISOString()
+        };
+
+        logConsole(`Enviando vale para ${student.name}...`, "info");
+        await apiPost({ action: "crearVale", ...newVale });
+
+        valesData.push(newVale);
+        currentCart = [];
+        updateCartUI();
+        alert(`¡Vale por $${total.toFixed(2)} autorizado con éxito para ${student.name}!`);
+    }
+
+    async function loadValesAndPagos() {
+        const res = await apiPost({ action: "getValesYPagos" });
+        if (res && !res.isHtml && res.data && res.data.success) {
+            valesData = res.data.vales || [];
+            pagosData = res.data.pagos || [];
+        }
+
+        if (currentUser.role === 'cooperativa') renderKanban();
+        if (currentUser.role === 'finanzas') renderFinanzas();
+    }
+
+    function renderKanban() {
+        const colC = document.getElementById('col-creado');
+        const colP = document.getElementById('col-preparacion');
+        const colE = document.getElementById('col-entregado');
+
+        colC.innerHTML = ''; colP.innerHTML = ''; colE.innerHTML = '';
+
+        let cC = 0, cP = 0, cE = 0;
+
+        valesData.forEach(v => {
+            const card = `
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-[#00205B]">${v.studentName}</span>
+                        <span class="text-xs font-bold text-[#9E1B32]">$${parseFloat(v.total).toFixed(2)}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 bg-slate-50 p-2 rounded-xl">${v.items}</p>
+                    <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1">
+                        <span>Autorizó: ${v.createdBy}</span>
+                        ${getKanbanButton(v)}
+                    </div>
+                </div>
+            `;
+
+            if (v.status === "Creado") { colC.innerHTML += card; cC++; }
+            else if (v.status === "En preparación") { colP.innerHTML += card; cP++; }
+            else if (v.status === "Entregado") { colE.innerHTML += card; cE++; }
+        });
+
+        document.getElementById('count-creado').innerText = cC;
+        document.getElementById('count-preparacion').innerText = cP;
+        document.getElementById('count-entregado').innerText = cE;
+    }
+
+    function getKanbanButton(v) {
+        if (v.status === "Creado") {
+            return `<button onclick="updateStatus('${v.id}', 'En preparación')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 rounded-lg text-[10px]">Preparar</button>`;
+        }
+        if (v.status === "En preparación") {
+            return `<button onclick="updateStatus('${v.id}', 'Entregado')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg text-[10px]">Entregar</button>`;
+        }
+        return `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-check"></i> Entregado</span>`;
+    }
+
+    async function updateStatus(id, newStatus) {
+        const v = valesData.find(x => x.id === id);
+        if (v) {
+            v.status = newStatus;
+            renderKanban();
+            await apiPost({ action: "updateValeStatus", id: id, status: newStatus });
+        }
+    }
+
+    function renderFinanzas() {
+        const container = document.getElementById('families-finances-container');
+        const filterDir = document.getElementById('filter-direction').value;
+        container.innerHTML = '';
+
+        catalogFamilias.forEach(fam => {
+            const familyStudents = catalogEstudiantes.filter(e => e.familyId === fam.id);
+            
+            let html = `
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-[#00205B] text-base border-b pb-2"><i class="fa-solid fa-users text-[#D4AF37] mr-2"></i>${fam.name}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            `;
+
+            familyStudents.forEach(est => {
+                let valesEst = valesData.filter(v => v.studentId === est.id);
+                if (filterDir !== "ALL") valesEst = valesEst.filter(v => v.createdBy === filterDir);
+
+                const totalVales = valesEst.reduce((sum, v) => sum + parseFloat(v.total || 0), 0);
+                const pagosEst = pagosData.filter(p => p.studentId === est.id);
+                const totalPagos = pagosEst.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                const saldo = totalVales - totalPagos;
+
+                html += `
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-xs text-slate-800">${est.name}</div>
+                                <div class="text-[10px] text-slate-400">${est.grado}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">Saldo Deudor</div>
+                                <div class="font-bold text-sm ${saldo > 0 ? 'text-[#9E1B32]' : 'text-emerald-600'}">$${saldo.toFixed(2)}</div>
+                            </div>
+                        </div>
+                        <button onclick="openPaymentModal('${fam.id}', '${est.id}', '${est.name}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-hand-holding-dollar mr-1"></i> Registrar Abono
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            container.innerHTML += html;
+        });
+    }
+
+    function openNewStudentModal() {
+        const famSelect = document.getElementById('new-student-family');
+        famSelect.innerHTML = `<option value="NEW">+ Crear Nueva Familia</option>`;
+        catalogFamilias.forEach(f => famSelect.innerHTML += `<option value="${f.id}">${f.name}</option>`);
+        toggleNewFamilyInput('NEW');
+        document.getElementById('modal-student').classList.remove('hidden');
+    }
+
+    function closeNewStudentModal() { document.getElementById('modal-student').classList.add('hidden'); }
+
+    function toggleNewFamilyInput(val) {
+        const container = document.getElementById('new-family-input-container');
+        if (val === 'NEW') container.classList.remove('hidden');
+        else container.classList.add('hidden');
+    }
+
+    function saveNewStudent(e) {
+        e.preventDefault();
+        const name = document.getElementById('new-student-name').value;
+        const grado = document.getElementById('new-student-grado').value;
+        const famVal = document.getElementById('new-student-family').value;
+
+        let famId = famVal;
+        if (famVal === 'NEW') {
+            famId = "FAM-" + Math.floor(100 + Math.random()*900);
+            const famName = document.getElementById('new-family-name').value || `Familia ${name.split(' ')[1] || name}`;
+            catalogFamilias.push({ id: famId, name: famName });
+        }
+
+        const newEst = { id: "EST-" + Math.floor(1000 + Math.random()*9000), familyId: famId, name: name, grado: grado };
+        catalogEstudiantes.push(newEst);
+        renderStudentsSelect();
+        closeNewStudentModal();
+        alert(`¡Alumno ${name} registrado correctamente!`);
+    }
+
+    function openPaymentModal(famId, estId, estName) {
+        document.getElementById('pay-family-id').value = famId;
+        document.getElementById('pay-student-id').value = estId;
+        document.getElementById('pay-student-name').value = estName;
+        document.getElementById('modal-payment').classList.remove('hidden');
+    }
+
+    function closePaymentModal() { document.getElementById('modal-payment').classList.add('hidden'); }
+
+    async function submitPayment(e) {
+        e.preventDefault();
+        const famId = document.getElementById('pay-family-id').value;
+        const estId = document.getElementById('pay-student-id').value;
+        const estName = document.getElementById('pay-student-name').value;
+        const amount = parseFloat(document.getElementById('pay-amount').value);
+        const note = document.getElementById('pay-note').value;
+
+        const newPago = {
+            id: "PAG-" + Math.floor(1000 + Math.random()*9000),
+            familyId: famId, studentId: estId, studentName: estName,
+            amount: amount, note: note, registeredBy: currentUser.name,
+            date: new Date().toISOString()
+        };
+
+        pagosData.push(newPago);
+        renderFinanzas();
+        closePaymentModal();
+        await apiPost({ action: "registrarPago", ...newPago });
+        alert("Abono registrado con éxito.");
+    }
+
+    window.onload = function() {
+        logConsole("Sistema Colegio Labastida SmartCoop v3.2 iniciado en español.", "highlight");
+    };
+    </script>
+</body>
+</html>
