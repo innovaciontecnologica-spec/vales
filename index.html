@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida - SmartCoop v4.2.1</title>
+    <title>Colegio Labastida - SmartCoop v4.3</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -46,7 +46,7 @@
 
                     <span class="bg-[#9E1B32] text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full">Sistema Oficial</span>
 
-                    <span class="text-[#D4AF37] text-xs font-semibold">v4.2.1</span>
+                    <span class="text-[#D4AF37] text-xs font-semibold">v4.3</span>
 
                 </div>
 
@@ -520,6 +520,34 @@
             <p class="text-xs text-slate-500">Puedes reimprimir, guardar como PDF desde el navegador o compartir el resumen por WhatsApp o correo. El envío requiere seleccionar al destinatario.</p>
             <div id="caja-recibos" class="space-y-2"></div>
           </section>
+          <section id="cierre-diario-v43" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 md:p-7 space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="font-bold text-lg text-[#00205B]"><i class="fa-solid fa-calendar-check text-[#D4AF37] mr-2"></i> Corte diario de caja</h3><p class="text-xs text-slate-500">Consulta de movimientos por fecha y responsable. La confirmación bloquea nuevos cobros de esa cuenta durante el resto del día.</p></div>
+              <div class="flex flex-wrap gap-2 items-end"><label class="text-xs font-semibold">Fecha operativa <input id="cierre-fecha-v43" type="date" class="block border rounded-lg p-2 mt-1" /></label><button type="button" onclick="cargarReporteDiarioV43()" class="border rounded-lg px-3 py-2 text-xs">Actualizar</button><button type="button" onclick="imprimirCierreV43()" class="bg-[#00205B] text-white rounded-lg px-3 py-2 text-xs">Imprimir / PDF</button></div>
+            </div>
+            <p id="cierre-aviso-v43" class="text-xs text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-lg"></p>
+            <div id="cierre-resumen-v43" class="grid grid-cols-2 md:grid-cols-5 gap-2"></div>
+            <div id="cierre-propio-v43"></div>
+            <form id="cierre-form-v43" onsubmit="confirmarCierreV43(event)" class="border border-blue-200 bg-blue-50 rounded-xl p-4 space-y-3">
+              <p class="text-xs font-semibold text-blue-950">Cierre de tu propia cuenta · Efectivo esperado <strong id="cierre-own-total-v43">$0.00</strong></p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><label class="text-xs font-semibold">Efectivo contado ($)<input id="cierre-efectivo-v43" type="number" min="0" max="1000000" step="0.01" required class="block mt-1 w-full p-2 border rounded-lg" /></label>
+                <label class="text-xs font-semibold">Observaciones / motivo de diferencia<input id="cierre-observaciones-v43" maxlength="400" type="text" class="block mt-1 w-full p-2 border rounded-lg" placeholder="Explica faltantes o sobrantes" /></label></div>
+              <button type="submit" id="confirmar-cierre-v43" class="bg-emerald-800 text-white rounded-xl px-4 py-2 font-bold text-sm">Confirmar cierre definitivo</button>
+            </form>
+            <div id="cierre-desglose-v43" class="space-y-3 hidden"><h4 class="text-sm font-bold text-[#00205B]">Resumen por responsable · Dirección General</h4><div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="border-b"><th class="p-2 text-left">Responsable</th><th>Pagos</th><th>Efectivo</th><th>Transferencia</th><th>Terminal</th><th>Total</th></tr></thead><tbody id="cierre-responsables-v43"></tbody></table></div><h4 class="text-sm font-semibold">Cierres confirmados</h4><div id="cierre-cierres-v43" class="space-y-1"></div></div>
+            <h4 class="text-sm font-bold text-[#00205B]">Movimientos del día</h4>
+            <div class="overflow-x-auto"><table class="w-full text-xs text-left"><thead><tr class="border-b"><th class="p-2">Fecha</th><th class="p-2">Vale</th><th class="p-2">Alumno</th><th class="p-2">Responsable</th><th class="p-2">Método</th><th class="p-2 text-right">Importe</th></tr></thead><tbody id="cierre-pagos-v43"></tbody></table></div><p id="cierre-omitidos-v43" class="text-xs text-amber-700"></p>
+          </section>
+        </main>
+
+        <!-- Historia de vales: sólo Dirección General. No da datos de otros a Caja. -->
+        <main id="app-historial-v43" class="hidden space-y-4">
+          <section class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 md:p-7 space-y-4">
+            <div><h2 class="text-xl font-bold text-[#00205B]"><i class="fa-solid fa-clock-rotate-left mr-2 text-[#D4AF37]"></i>Historial detallado por vale</h2><p class="text-xs text-slate-500">Solo Dirección General: movimientos individuales, responsables, abonos y saldos. Incluye vales liquidados.</p></div>
+            <div class="flex flex-wrap gap-2"><input type="search" id="historial-busqueda-v43" placeholder="Buscar alumno, folio o producto" class="border rounded-xl p-3 text-sm flex-1 min-w-48" onkeydown="if(event.key==='Enter'){event.preventDefault();cargarHistorialValesV43(true)}" /><button type="button" onclick="cargarHistorialValesV43(true)" class="bg-[#00205B] text-white rounded-xl px-4 py-2 text-sm font-bold">Buscar</button></div>
+            <div class="flex flex-wrap justify-between gap-2"><span id="historial-contador-v43" class="text-xs text-slate-500"></span><span id="historial-avisos-v43" class="text-xs text-amber-700"></span></div>
+            <div id="historial-lista-v43" class="space-y-2"></div>
+            <button id="historial-cargar-mas-v43" type="button" onclick="cargarHistorialValesV43(false)" class="hidden border rounded-xl px-4 py-2 font-semibold text-sm">Mostrar más vales</button>
+          </section>
         </main>
 
         <!-- Sólo visible para Dirección General -->
@@ -701,6 +729,8 @@ let valesData = [], pagosData = [], currentCart = [];
 let enviandoVale = false, guardandoProducto = false;
 let pendingValeRequestId = '';
 let cajaPendientes=[], cajaRecibos=[], cajaRequestId='', enviandoCobroCaja=false;
+let cajaCerradaHoy = false, reporteDiario = null, cierreRequestId = '';
+let historialValesV43 = [], historialOffsetV43 = 0, historialHayMasV43 = false, historialTotalV43 = 0;
 
 const byId = id => document.getElementById(id);
 const textoSeguro = value => String(value == null ? '' : value)
@@ -814,6 +844,7 @@ async function refreshDataFromSheets() {
     if (currentUser && currentUser.role === 'admin') {
       renderFinanzas();renderAdminProducts();
       await cargarCaja(); // Mismos saldos y cobros de Caja para Dirección General.
+      await cargarHistorialValesV43(true);
     }
   } catch(e) { connectionBadge('No se pudo sincronizar', false);logConsole(e.message,'error'); }
 }
@@ -842,13 +873,14 @@ function setupDashboardForUser() {
   byId('user-navbar-info').classList.add('flex');
   byId('nav-user-name').textContent = currentUser.name;
   byId('nav-user-role').textContent = currentUser.role;
-  ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja'].forEach(i=>byId(i).classList.add('hidden'));
+  ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja','app-historial-v43'].forEach(i=>byId(i).classList.add('hidden'));
   if (['director','admin'].includes(currentUser.role)) byId('app-director').classList.remove('hidden');
   if (currentUser.role === 'cooperativa') byId('app-coop').classList.remove('hidden');
   if (['caja','admin'].includes(currentUser.role)) byId('app-caja').classList.remove('hidden');
   if (currentUser.role === 'admin') {
     byId('app-finanzas').classList.remove('hidden');
     byId('app-admin-productos').classList.remove('hidden');
+    byId('app-historial-v43').classList.remove('hidden');
   }
   refreshDataFromSheets();
 }
@@ -856,8 +888,8 @@ async function logout() {
   const oldToken = tokenSesion;
   currentUser = null;tokenSesion = '';currentCart = [];
   catalogFamilias = [];catalogEstudiantes = [];catalogProductos = [];valesData = [];pagosData = [];
-  ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja','user-navbar-info'].forEach(i=>byId(i).classList.add('hidden'));
-  cajaPendientes=[];cajaRecibos=[];cajaRequestId='';cerrarModalCaja();
+  ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja','app-historial-v43','user-navbar-info'].forEach(i=>byId(i).classList.add('hidden'));
+  cajaPendientes=[];cajaRecibos=[];cajaRequestId='';cajaCerradaHoy=false;reporteDiario=null;cierreRequestId='';historialValesV43=[];historialOffsetV43=0;cerrarModalCaja();
   closeValeReview();closeProductModal();pendingValeRequestId='';
   byId('section-login').classList.remove('hidden');
   updateCartUI();
@@ -1110,7 +1142,9 @@ async function cargarCaja() {
     if(!Array.isArray(data.pendientes)||!Array.isArray(data.recibos)) throw new Error('Respuesta de Caja incompleta.');
     cajaPendientes=data.pendientes;
     cajaRecibos=data.recibos;
+    cajaCerradaHoy=!!data.cerradoHoy;
     renderCaja();
+    await cargarReporteDiarioV43();
   } catch(e) {
     byId('caja-pendientes').textContent='No fue posible actualizar los pendientes: '+e.message;
     logConsole('Error de Caja: '+e.message,'error');
@@ -1137,7 +1171,7 @@ function renderCaja() {
     <p class="text-sm">${textoSeguro(v.items)}</p>
     <p class="text-xs">Total del vale: ${dinero(v.total)}</p>
     <div class="flex justify-between items-center gap-2"><strong class="text-rose-800 text-sm">Pendiente ${dinero(v.saldo)}</strong>
-    <button type="button" class="caja-pay rounded-lg bg-emerald-700 text-white font-semibold text-xs px-4 py-2" data-id="${textoSeguro(v.id)}">Cobrar</button></div>
+    <button type="button" class="caja-pay rounded-lg bg-emerald-700 text-white font-semibold text-xs px-4 py-2 disabled:opacity-40" ${cajaCerradaHoy?'disabled title="Caja cerrada por hoy"':''} data-id="${textoSeguro(v.id)}">Cobrar</button></div>
   </div>`).join(''):'<p class="p-4 text-slate-500 text-sm">No hay vales entregados pendientes con ese criterio.</p>';
   cont.querySelectorAll('.caja-pay').forEach(btn=>btn.addEventListener('click',()=>abrirCobroCaja(btn.dataset.id)));
   const rs=byId('caja-recibos');
@@ -1155,6 +1189,7 @@ function renderCaja() {
 }
 function abrirCobroCaja(id) {
   if(!['caja','admin'].includes(currentUser?.role))return;
+  if(cajaCerradaHoy) return alert('Tu caja está cerrada por hoy. Podrás registrar nuevos cobros mañana.');
   const vale=cajaPendientes.find(v=>v.id===id);
   if(!vale)return alert('Vale no disponible; actualiza Caja.');
   cajaRequestId='';
@@ -1174,6 +1209,7 @@ function cerrarModalCaja() {
 async function guardarCobroCaja(ev) {
   ev.preventDefault();
   if(!['caja','admin'].includes(currentUser?.role)||enviandoCobroCaja)return;
+  if(cajaCerradaHoy)return alert('Tu caja ya se encuentra cerrada por hoy.');
   const id=byId('caja-vale-id').value;
   const vale=cajaPendientes.find(v=>v.id===id);
   const amount=Number(byId('caja-pay-amount').value);
@@ -1250,11 +1286,133 @@ function compartirReciboCaja(id,canal) {
   }
 }
 
+
+// =======================================================
+// SMARTCOOP v4.3 | HISTORIAL DE VALES Y CIERRE DIARIO
+// =======================================================
+const escV43 = textoSeguro;
+const diaLocalV43 = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const fmtFechaV43 = s => fechaReciboCaja(s);
+
+async function cargarHistorialValesV43(reiniciar=true) {
+  if(currentUser?.role!=='admin')return;
+  if(reiniciar){historialOffsetV43=0;historialValesV43=[];}
+  const btn=byId('historial-cargar-mas-v43');btn.disabled=true;
+  try {
+    const r=await apiPost({action:'getHistorialValesV43',busqueda:byId('historial-busqueda-v43').value.trim(),offset:historialOffsetV43});
+    if(!Array.isArray(r.vales))throw new Error('El servidor no devolvió el historial.');
+    historialValesV43=historialValesV43.concat(r.vales);
+    historialTotalV43=Number(r.total||0);
+    historialHayMasV43=r.siguienteOffset!==null && r.siguienteOffset!==undefined;
+    if(historialHayMasV43)historialOffsetV43=r.siguienteOffset;
+    byId('historial-avisos-v43').textContent=Number(r.pagosAntiguosSinFolio)>0
+      ? 'Existen '+r.pagosAntiguosSinFolio+' pagos antiguos sin ValeID ('+dinero(r.importeAntiguoSinFolio)+'). Se consideran en la conciliación FIFO existente, pero NO se muestran como pagos directos de un vale.' : '';
+    renderHistorialV43();
+  } catch(e){byId('historial-avisos-v43').textContent='No se pudo cargar historial: '+e.message;logConsole(e.message,'error');}
+  finally{btn.disabled=false;}
+}
+function renderHistorialV43() {
+  if(currentUser?.role!=='admin')return;
+  byId('historial-contador-v43').textContent=historialValesV43.length+' de '+historialTotalV43+' vales';
+  byId('historial-cargar-mas-v43').classList.toggle('hidden',!historialHayMasV43);
+  byId('historial-lista-v43').innerHTML=historialValesV43.length ? historialValesV43.map(v=>{
+    const status=v.status==='Entregado'?(Number(v.saldo)===0?'Liquidado':(Number(v.saldo)<Number(v.total)?'Abono parcial':'Pendiente de cobro')):'Pendiente de entrega';
+    const historial=v.pagosDirectos.map(p=>`<tr class="border-b"><td class="p-2">${escV43(fmtFechaV43(p.date))}</td><td class="p-2">${escV43(p.id)}</td><td class="p-2">${escV43(p.registradoPor)}</td><td class="p-2">${escV43(p.metodoPago||'Sin método')}</td><td class="p-2 font-bold">${dinero(p.amount)}</td><td class="p-2"><button class="recibo-historico-v43 rounded border px-2 py-1 text-xs" type="button" data-id="${escV43(p.id)}">Ver recibo</button></td></tr>`).join('');
+    return `<details class="border border-slate-200 bg-white rounded-xl p-3"><summary class="cursor-pointer list-none flex flex-wrap justify-between items-center gap-2">
+    <span><strong class="text-[#00205B]">${escV43(v.studentName)}</strong><small class="block text-slate-500">${escV43(v.id)} · ${escV43(fmtFechaV43(v.date))} · ${escV43(status)}</small></span>
+    <span class="font-bold">${dinero(v.total)} <small class="block font-normal text-right">${v.saldo===null?'No entregado':'Pendiente '+dinero(v.saldo)}</small></span></summary>
+    <p class="my-2 text-sm text-slate-600">${escV43(v.items)}</p><p class="text-xs text-slate-500">Autorizó ${escV43(v.createdBy)} · Pagos directos ${dinero(v.totalDirecto)} ${Number(v.aplicadoAnteriorEstimado)>0?'· Posible aplicación de abonos anteriores '+dinero(v.aplicadoAnteriorEstimado):''}</p>
+    <div class="overflow-x-auto mt-3"><table class="w-full text-xs text-left"><thead><tr class="border-b"><th class="p-2">Fecha</th><th class="p-2">Folio pago</th><th class="p-2">Responsable</th><th class="p-2">Método</th><th class="p-2">Importe</th><th class="p-2">Comprobante</th></tr></thead><tbody>${historial||'<tr><td colspan="6" class="p-3 text-slate-500">No hay pagos directos asociados a este folio.</td></tr>'}</tbody></table></div></details>`;
+  }).join(''):'<p class="text-sm text-slate-500">No se encontraron vales.</p>';
+  byId('historial-lista-v43').querySelectorAll('.recibo-historico-v43').forEach(b=>b.addEventListener('click',()=>verReciboHistoricoV43(b.dataset.id)));
+}
+async function verReciboHistoricoV43(id) {
+  try {
+    const res=await apiPost({action:'getReciboV43',id});
+    if(!res.recibo)throw new Error('No se encontró el comprobante.');
+    cajaRecibos=[res.recibo,...cajaRecibos.filter(r=>r.id!==res.recibo.id)];
+    renderCaja();
+    byId('caja-recibos').scrollIntoView({behavior:'smooth',block:'center'});
+    alert('Comprobante localizado. Utiliza Imprimir / PDF en la sección de comprobantes.');
+  }catch(e){alert('No se pudo localizar el comprobante: '+e.message);}
+}
+async function cargarReporteDiarioV43() {
+  if(!['caja','admin'].includes(currentUser?.role))return;
+  const el=byId('cierre-fecha-v43');
+  if(!el.value)el.value=diaLocalV43();
+  try {
+    const r=await apiPost({action:'getReporteDiarioV43',fecha:el.value});
+    if(!Array.isArray(r.pagos)||!r.propio)throw new Error('Respuesta incompleta del reporte diario.');
+    reporteDiario=r;
+    renderReporteDiarioV43();
+  } catch(e) {
+    byId('cierre-aviso-v43').textContent='No se pudo actualizar el reporte: '+e.message;
+    logConsole(e.message,'error');
+  }
+}
+function renderReporteDiarioV43(){
+  if(!reporteDiario)return;
+  const r=reporteDiario;
+  const all=r.resumen,own=r.propio;
+  byId('cierre-fecha-v43').max=r.hoy;
+  byId('cierre-aviso-v43').textContent='Fecha operativa de Querétaro (America/Mexico_City). Cerrar caja bloquea nuevos cobros de tu usuario durante el resto de ese día.';
+  byId('cierre-resumen-v43').innerHTML=[
+    ['Efectivo',all.efectivo],['Transferencia',all.transferencia],['Terminal',all.terminal],['Otros / históricos',all.noEspecificado],['Total del día',all.total]
+  ].map(([label,n])=>`<div class="rounded-lg bg-slate-50 border p-3"><small class="block text-slate-500">${escV43(label)}</small><strong class="text-lg text-[#00205B]">${dinero(n)}</strong></div>`).join('');
+  const closed=r.cierrePropio;
+  byId('cierre-propio-v43').innerHTML=closed?`<div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900"><strong>Cierre confirmado: ${escV43(closed.id)}</strong><p class="text-xs mt-1">Efectivo del sistema ${dinero(closed.efectivoSistema)} · Contado ${dinero(closed.efectivoContado)} · Diferencia ${dinero(closed.diferencia)} · ${closed.numeroPagos} movimientos</p></div>`:`<p class="text-sm text-slate-500">No has confirmado el cierre de este día.</p>`;
+  const permitClose=(!closed && r.fecha===r.hoy);
+  byId('cierre-form-v43').classList.toggle('hidden',!permitClose);
+  byId('cierre-own-total-v43').textContent=dinero(own.efectivo);
+  if(permitClose && !byId('cierre-efectivo-v43').dataset.edited)byId('cierre-efectivo-v43').value=Number(own.efectivo).toFixed(2);
+  byId('cierre-desglose-v43').classList.toggle('hidden',currentUser?.role!=='admin');
+  if(currentUser?.role==='admin'){
+    byId('cierre-responsables-v43').innerHTML=r.porResponsable.map(x=>`<tr class="border-b"><td class="p-2">${escV43(x.nombre)}</td><td class="p-2">${x.numeroPagos}</td><td class="p-2">${dinero(x.efectivo)}</td><td class="p-2">${dinero(x.transferencia)}</td><td class="p-2">${dinero(x.terminal)}</td><td class="p-2 font-semibold">${dinero(x.total)}</td></tr>`).join('')||'<tr><td class="p-3" colspan="6">No hubo cobros en esta fecha.</td></tr>';
+    byId('cierre-cierres-v43').innerHTML=r.cierres.map(c=>`<p class="p-2 rounded-lg border text-xs"><strong>${escV43(c.responsable)}</strong> · ${escV43(c.id)} · Contado ${dinero(c.efectivoContado)} · Diferencia ${dinero(c.diferencia)} · ${escV43(c.fechaCierre)}</p>`).join('')||'<p class="text-xs text-slate-500">Sin cierres confirmados.</p>';
+  }
+  byId('cierre-pagos-v43').innerHTML=r.pagos.map(p=>`<tr class="border-b"><td class="p-2">${escV43(fmtFechaV43(p.date))}</td><td class="p-2">${escV43(p.valeId||'Sin vale')}</td><td class="p-2">${escV43(p.studentName)}</td><td class="p-2">${escV43(p.registradoPor)}</td><td class="p-2">${escV43(p.metodoPago||'Sin método')}</td><td class="p-2 text-right font-semibold">${dinero(p.amount)}</td></tr>`).join('')||'<tr><td colspan="6" class="p-3 text-slate-500">Sin movimientos.</td></tr>';
+  byId('cierre-omitidos-v43').textContent=r.pagosOmitidos?'Se muestran solo 200 movimientos; faltan '+r.pagosOmitidos+'. Consulta Sheets para el detalle completo.':'';
+}
+async function confirmarCierreV43(ev) {
+  ev.preventDefault();
+  if(!['caja','admin'].includes(currentUser?.role)||!reporteDiario)return;
+  if(reporteDiario.cierrePropio)return alert('El cierre ya está registrado.');
+  const contado=Number(byId('cierre-efectivo-v43').value),esperado=Number(reporteDiario.propio.efectivo);
+  const obs=byId('cierre-observaciones-v43').value.trim();
+  if(!Number.isFinite(contado)||contado<0||Math.abs(contado*100-Math.round(contado*100))>0.00001)return alert('Efectivo contado inválido.');
+  if(Math.round(contado*100)!==Math.round(esperado*100) && obs.length<10)return alert('Explica la diferencia de efectivo (al menos 10 caracteres).');
+  if(!confirm('Confirmar cierre DEFINITIVO de '+reporteDiario.fecha+' para '+currentUser.name+'?\nEfectivo registrado: '+dinero(esperado)+'\nEfectivo contado: '+dinero(contado)+'\nEsto bloqueará nuevos cobros de tu usuario por el resto del día.'))return;
+  if(!cierreRequestId)cierreRequestId=nuevaSolicitud();
+  byId('confirmar-cierre-v43').disabled=true;
+  try{
+    const res=await apiPost({action:'cerrarCajaV43',fecha:reporteDiario.fecha,requestId:cierreRequestId,efectivoContado:contado,observaciones:obs});
+    cierreRequestId='';byId('cierre-efectivo-v43').dataset.edited='';
+    await cargarCaja();
+    alert('Cierre registrado. Folio '+res.cierre.id+'. Guarda o imprime tu reporte del día.');
+  }catch(e){alert('No se confirmó el cierre: '+e.message+'\nAntes de repetir, actualiza el reporte y verifica si se registró.');}
+  finally{byId('confirmar-cierre-v43').disabled=false;}
+}
+function imprimirCierreV43(){
+  if(!reporteDiario)return;
+  const r=reporteDiario,own=r.propio,closed=r.cierrePropio;
+  const nombre=currentUser.name;
+  const f=escV43;
+  const general=currentUser.role==='admin' ? '<h3>Consolidado del día · Todos los responsables</h3><p>Total: '+dinero(r.resumen.total)+' (efectivo '+dinero(r.resumen.efectivo)+', transferencia '+dinero(r.resumen.transferencia)+', terminal '+dinero(r.resumen.terminal)+', sin método '+dinero(r.resumen.noEspecificado)+')</p><table><tr><th>Responsable</th><th>Pagos</th><th>Total</th></tr>'+r.porResponsable.map(x=>'<tr><td>'+f(x.nombre)+'</td><td>'+x.numeroPagos+'</td><td>'+dinero(x.total)+'</td></tr>').join('')+'</table>' : '';
+  const html='<!doctype html><html lang="es"><meta charset="UTF-8"><title>Corte SmartCoop '+f(r.fecha)+'</title><style>body{font:14px Arial;margin:25px;color:#17213a}h1{color:#00205b}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}small{color:#666}@media print{button{display:none}}</style><body><h1>Colegio Labastida · Corte diario</h1><p>Fecha: '+f(r.fecha)+' · Responsable: '+f(nombre)+'</p><p>Estado: '+(closed?'CERRADO · '+f(closed.id):'SIN CERRAR')+'</p><h3>Movimientos de esta cuenta</h3><table><tr><th>Concepto</th><th>Importe</th></tr>'+
+  [['Efectivo',own.efectivo],['Transferencia',own.transferencia],['Terminal',own.terminal],['Sin método especificado',own.noEspecificado],['Total',own.total],['Efectivo contado',closed?.efectivoContado??'—'],['Diferencia',closed?.diferencia??'—']].map(x=>'<tr><td>'+f(x[0])+'</td><td>'+(typeof x[1]==='number'?dinero(x[1]):f(x[1]))+'</td></tr>').join('')+'</table><p>Pagos: '+own.numeroPagos+'</p>'+general+(closed?'<p>Observaciones: '+f(closed.observaciones||'Sin observaciones')+'</p>':'')+'<small>Corte administrativo interno. Los totales por fecha se calculan en hora de Querétaro. No sustituye el depósito bancario.</small><p><button onclick="window.print()">Imprimir / PDF</button></p></body></html>';
+  const w=window.open('','_blank','width=750,height=800');
+  if(!w)return alert('Permite ventanas emergentes para imprimir.');
+  w.document.open();w.document.write(html);w.document.close();
+}
+
 window.addEventListener('DOMContentLoaded',()=>{
   byId('endpoint-input').value=API_BASE;
   // Los pagos generales por alumno fueron eliminados.
   byId('select-student').addEventListener('change', () => {pendingValeRequestId='';});
-  logConsole('SmartCoop v4.2.1 iniciado. Cobros unificados por vale en Caja y Dirección General.');
+  byId('cierre-fecha-v43').value=diaLocalV43();
+  byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
+  byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
+  logConsole('SmartCoop v4.3 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
