@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida - SmartCoop v4.3</title>
+    <title>Colegio Labastida - SmartCoop v4.3.2</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -46,7 +46,7 @@
 
                     <span class="bg-[#9E1B32] text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full">Sistema Oficial</span>
 
-                    <span class="text-[#D4AF37] text-xs font-semibold">v4.3</span>
+                    <span class="text-[#D4AF37] text-xs font-semibold">v4.3.2</span>
 
                 </div>
 
@@ -545,7 +545,7 @@
             <div><h2 class="text-xl font-bold text-[#00205B]"><i class="fa-solid fa-clock-rotate-left mr-2 text-[#D4AF37]"></i>Historial detallado por vale</h2><p class="text-xs text-slate-500">Solo Dirección General: movimientos individuales, responsables, abonos y saldos. Incluye vales liquidados.</p></div>
             <div class="flex flex-wrap gap-2"><input type="search" id="historial-busqueda-v43" placeholder="Buscar alumno, folio o producto" class="border rounded-xl p-3 text-sm flex-1 min-w-48" onkeydown="if(event.key==='Enter'){event.preventDefault();cargarHistorialValesV43(true)}" /><button type="button" onclick="cargarHistorialValesV43(true)" class="bg-[#00205B] text-white rounded-xl px-4 py-2 text-sm font-bold">Buscar</button></div>
             <div class="flex flex-wrap justify-between gap-2"><span id="historial-contador-v43" class="text-xs text-slate-500"></span><span id="historial-avisos-v43" class="text-xs text-amber-700"></span></div>
-            <div id="historial-lista-v43" class="space-y-2"></div>
+            <div id="historial-lista-v43" class="space-y-2"><p class="text-sm text-slate-500">Para consultar el historial, escribe un folio o pulsa Buscar.</p></div>
             <button id="historial-cargar-mas-v43" type="button" onclick="cargarHistorialValesV43(false)" class="hidden border rounded-xl px-4 py-2 font-semibold text-sm">Mostrar más vales</button>
           </section>
         </main>
@@ -758,11 +758,16 @@ function apiRoot() {return API_BASE.replace(/\/(api)?\/?$/i, '');}
 async function apiPost(body) {
   if (!API_BASE) throw new Error('Primero configura la URL de Cloudflare Worker.');
   const endpoint = apiRoot() + '/api';
+  const inicio = performance.now();
   const resp = await fetch(endpoint, {
     method: 'POST', mode: 'cors', cache: 'no-store',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({...body, token: tokenSesion || undefined})
   });
+  const tardanzaMs = Math.round(performance.now() - inicio);
+  if (tardanzaMs > 2500) {
+    console.info('[SmartCoop rendimiento] ' + String(body.action || 'consulta') + ': ' + tardanzaMs + ' ms');
+  }
   let data;
   try {data = await resp.json();} catch {throw new Error('El servidor no devolvió JSON.');}
   if (!resp.ok || !data || data.success !== true) throw new Error(data?.error || 'La operación no fue confirmada.');
@@ -843,8 +848,9 @@ async function refreshDataFromSheets() {
     if (currentUser && currentUser.role === 'cooperativa') renderKanban();
     if (currentUser && currentUser.role === 'admin') {
       renderFinanzas();renderAdminProducts();
-      await cargarCaja(); // Mismos saldos y cobros de Caja para Dirección General.
-      await cargarHistorialValesV43(true);
+      // El historial es opcional y pesado; solo se consulta al pulsar Buscar.
+      // La caja se actualiza enseguida, sin impedir que se use el catálogo.
+      await cargarCaja();
     }
   } catch(e) { connectionBadge('No se pudo sincronizar', false);logConsole(e.message,'error'); }
 }
@@ -1144,7 +1150,8 @@ async function cargarCaja() {
     cajaRecibos=data.recibos;
     cajaCerradaHoy=!!data.cerradoHoy;
     renderCaja();
-    await cargarReporteDiarioV43();
+    // El corte diario llega en segundo plano: Caja ya es utilizable.
+    if (actualizarReporte) void cargarReporteDiarioV43();
   } catch(e) {
     byId('caja-pendientes').textContent='No fue posible actualizar los pendientes: '+e.message;
     logConsole('Error de Caja: '+e.message,'error');
@@ -1387,7 +1394,8 @@ async function confirmarCierreV43(ev) {
   try{
     const res=await apiPost({action:'cerrarCajaV43',fecha:reporteDiario.fecha,requestId:cierreRequestId,efectivoContado:contado,observaciones:obs});
     cierreRequestId='';byId('cierre-efectivo-v43').dataset.edited='';
-    await cargarCaja();
+    await cargarCaja(false);
+    await cargarReporteDiarioV43(); // Confirmación visible del cierre, antes de mostrar éxito.
     alert('Cierre registrado. Folio '+res.cierre.id+'. Guarda o imprime tu reporte del día.');
   }catch(e){alert('No se confirmó el cierre: '+e.message+'\nAntes de repetir, actualiza el reporte y verifica si se registró.');}
   finally{byId('confirmar-cierre-v43').disabled=false;}
@@ -1412,7 +1420,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   byId('cierre-fecha-v43').value=diaLocalV43();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
