@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida - SmartCoop</title>
+    <title>Colegio Labastida - SmartCoop v4.1</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -46,7 +46,7 @@
 
                     <span class="bg-[#9E1B32] text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full">Sistema Oficial</span>
 
-                    <span class="text-[#D4AF37] text-xs font-semibold">v4.0</span>
+                    <span class="text-[#D4AF37] text-xs font-semibold">v4.1</span>
 
                 </div>
 
@@ -304,7 +304,7 @@
 
 
 
-                <!-- Carrito / Detalle del Vale -->
+                <!-- Carrito editable / Detalle del Vale -->
 
                 <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 h-fit">
 
@@ -312,7 +312,10 @@
 
                         <div class="flex items-center justify-between border-b pb-3">
 
-                            <h3 class="font-bold text-[#00205B] text-sm">Resumen del Vale</h3>
+                            <div>
+                                <h3 class="font-bold text-[#00205B] text-sm">Resumen del Vale</h3>
+                                <p class="text-[11px] text-slate-500 mt-1">Corrige cantidades o elimina productos antes de enviar.</p>
+                            </div>
 
                             <span id="cart-item-count" class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">0 artículos</span>
 
@@ -338,10 +341,11 @@
 
                         </div>
 
-                        <button onclick="submitVale()" class="w-full bg-[#9E1B32] hover:bg-rose-900 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-2">
-
-                            <i class="fa-solid fa-paper-plane"></i> Autorizar y Enviar Pedido
-
+                        <button type="button" id="clear-cart-btn" onclick="clearCart()" class="w-full border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold py-2 rounded-xl text-xs">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Vaciar vale
+                        </button>
+                        <button type="button" id="review-vale-btn" onclick="openValeReview()" class="w-full bg-[#9E1B32] hover:bg-rose-900 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-clipboard-check"></i> Revisar y autorizar vale
                         </button>
 
                     </div>
@@ -492,11 +496,82 @@
 
         </main>
 
-
+        <!-- Sólo visible para Dirección General -->
+        <main id="app-admin-productos" class="hidden space-y-5">
+            <section class="bg-white p-5 md:p-7 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-[#00205B]"><i class="fa-solid fa-boxes-stacked text-[#D4AF37] mr-2"></i>Administración de Productos</h2>
+                        <p class="text-xs text-slate-500 mt-1">Sólo Dirección General: precios, altas y productos activos.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="refreshDataFromSheets()" class="border border-slate-300 px-4 py-2 rounded-xl text-sm">Actualizar lista</button>
+                        <button type="button" onclick="openProductModal()" class="bg-[#00205B] text-white px-4 py-2 rounded-xl text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> Nuevo producto</button>
+                    </div>
+                </div>
+                <p class="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-3">Desactivar oculta un producto del menú de nuevos vales, pero mantiene intactos los vales anteriores.</p>
+                <div class="overflow-x-auto"><table class="w-full text-sm text-left">
+                    <thead><tr class="border-b text-slate-500"><th class="py-3 pr-3">Producto</th><th class="py-3 pr-3">Precio</th><th class="py-3 pr-3">Estado</th><th class="py-3">Acciones</th></tr></thead>
+                    <tbody id="admin-products-body"></tbody>
+                </table></div>
+            </section>
+        </main>
 
     </div>
 
+    <!-- MODAL REVISAR Y CONFIRMAR VALE -->
+    <div id="modal-review-vale" role="dialog" aria-modal="true" aria-labelledby="review-vale-title" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <h3 id="review-vale-title" class="font-bold text-xl text-[#00205B]">Revisar antes de autorizar</h3>
+            <p class="text-sm text-slate-600">El vale <strong>todavía no se ha enviado</strong>. Verifica el alumno, los productos y las cantidades.</p>
+            <div id="review-vale-content" class="bg-slate-50 rounded-xl p-4 text-sm space-y-2 max-h-72 overflow-y-auto"></div>
+            <div class="flex flex-col sm:flex-row gap-2 justify-end">
+                <button type="button" onclick="closeValeReview()" class="border border-slate-300 rounded-xl px-4 py-2 font-semibold">Volver y corregir</button>
+                <button type="button" id="confirm-send-vale-btn" onclick="submitVale()" class="bg-[#9E1B32] text-white rounded-xl px-4 py-3 font-bold"><i class="fa-solid fa-paper-plane mr-1"></i> Confirmar y enviar</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- MODAL ADMINISTRAR PRODUCTO -->
+    <div id="modal-product" role="dialog" aria-modal="true" aria-labelledby="product-modal-title" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center gap-3">
+                <h3 id="product-modal-title" class="font-bold text-xl text-[#00205B]">Nuevo producto</h3>
+                <button type="button" onclick="closeProductModal()" aria-label="Cerrar">✕</button>
+            </div>
+            <form id="form-product" onsubmit="saveProduct(event)" class="space-y-3">
+                <input type="hidden" id="product-edit-id">
+                <label class="block text-sm font-semibold">Nombre
+                    <input id="product-edit-name" type="text" maxlength="110" required class="mt-1 w-full border rounded-xl p-3" placeholder="Ej. Agua de limón">
+                </label>
+                <label class="block text-sm font-semibold">Precio ($ MXN)
+                    <input id="product-edit-price" type="number" step="0.01" min="0.01" max="10000" required class="mt-1 w-full border rounded-xl p-3" placeholder="0.00">
+                </label>
+                <label class="block text-sm font-semibold">Icono (opcional)
+                    <select id="product-edit-icon" class="mt-1 w-full border rounded-xl p-3">
+                        <option value="">Automático según nombre</option><option value="fa-utensils">Cubiertos</option>
+                        <option value="fa-burger">Torta / hamburguesa</option><option value="fa-pizza-slice">Pizza</option>
+                        <option value="fa-bottle-water">Agua</option><option value="fa-cookie">Galleta</option>
+                        <option value="fa-apple-whole">Fruta</option><option value="fa-ice-cream">Helado</option>
+                        <option value="fa-mug-hot">Café</option><option value="fa-bread-slice">Pan</option>
+                    </select>
+                </label>
+                <label class="block text-sm font-semibold">Color (opcional)
+                    <select id="product-edit-color" class="mt-1 w-full border rounded-xl p-3">
+                        <option value="">Automático</option><option value="rojo">Rojo</option>
+                        <option value="azul">Azul</option><option value="verde">Verde</option>
+                        <option value="naranja">Naranja</option><option value="amarillo">Amarillo</option>
+                        <option value="morado">Morado</option><option value="rosa">Rosa</option>
+                    </select>
+                </label>
+                <label class="flex gap-2 items-center text-sm"><input id="product-edit-active" type="checkbox" checked class="w-4 h-4">Producto activo (disponible para nuevos vales)</label>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeProductModal()" class="border border-slate-300 rounded-xl px-4 py-2">Cancelar</button>
+                    <button type="submit" id="save-product-btn" class="bg-[#00205B] text-white rounded-xl px-4 py-2 font-bold">Guardar producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- MODAL REGISTRO NUEVO ALUMNO -->
 
@@ -634,7 +709,7 @@ let currentUser = null;
 let tokenSesion = '';
 let catalogFamilias = [], catalogEstudiantes = [], catalogProductos = [];
 let valesData = [], pagosData = [], currentCart = [];
-let enviandoVale = false, enviandoPago = false;
+let enviandoVale = false, enviandoPago = false, guardandoProducto = false;
 let pendingValeRequestId = '', pendingPagoRequestId = '';
 
 const byId = id => document.getElementById(id);
@@ -719,16 +794,33 @@ async function refreshDataFromSheets() {
     const data = await apiPost({action:'getCatalogosYDatos'});
     if (!Array.isArray(data.productos)) throw new Error('El servidor no devolvió el arreglo productos.');
     if (!Array.isArray(data.estudiantes) || !Array.isArray(data.familias)) throw new Error('Faltan catálogos de familias o estudiantes.');
-    catalogProductos = data.productos.map(p => ({id:String(p.id),name:String(p.name),price:Number(p.price), icon:parseIcon(p.icon,p.name),color:parseColor(p.color)}));
+    catalogProductos = data.productos.map(p => ({id:String(p.id),name:String(p.name),price:Number(p.price),
+      icon:parseIcon(p.icon,p.name),color:parseColor(p.color),rawIcon:String(p.icon||''),rawColor:String(p.color||''),activo:p.activo!==false}));
     catalogEstudiantes = data.estudiantes.map(s => ({id:String(s.id),familyId:String(s.familyId),name:String(s.name),grado:String(s.grado||'')}));
     catalogFamilias = data.familias.map(f => ({id:String(f.id),name:String(f.name)}));
+    // Si el precio o disponibilidad cambió mientras se preparaba un vale, actualizar el borrador.
+    if (currentCart.length) {
+      const previo=JSON.stringify(currentCart.map(x=>[x.id,x.qty,x.name,x.price]));
+      const retirados=[];
+      currentCart=currentCart.flatMap(item=>{
+        const p=catalogProductos.find(x=>x.id===item.id && x.activo && Number.isFinite(x.price) && x.price>0);
+        if (!p) {retirados.push(item.name);return [];}
+        return [{...p,qty:item.qty}];
+      });
+      if (JSON.stringify(currentCart.map(x=>[x.id,x.qty,x.name,x.price]))!==previo) {
+        pendingValeRequestId='';
+        logConsole('El borrador se actualizó con el catálogo y precios vigentes. Revísalo antes de enviar.','warn');
+        if (retirados.length) alert('Se retiraron del borrador productos no disponibles: '+retirados.join(', '));
+      }
+      updateCartUI();
+    }
     valesData = Array.isArray(data.vales) ? data.vales : [];
     pagosData = Array.isArray(data.pagos) ? data.pagos : [];
     connectionBadge('Catálogo: ' + catalogProductos.length + ' productos', catalogProductos.length > 0);
     logConsole('Catálogos recibidos: ' + catalogProductos.length + ' productos, ' + catalogEstudiantes.length + ' alumnos.');
     renderProductsGrid(); renderStudentsSelect();
     if (currentUser && currentUser.role === 'cooperativa') renderKanban();
-    if (currentUser && currentUser.role === 'admin') renderFinanzas();
+    if (currentUser && currentUser.role === 'admin') {renderFinanzas();renderAdminProducts();}
   } catch(e) { connectionBadge('No se pudo sincronizar', false);logConsole(e.message,'error'); }
 }
 async function processLogin(e) {
@@ -756,17 +848,21 @@ function setupDashboardForUser() {
   byId('user-navbar-info').classList.add('flex');
   byId('nav-user-name').textContent = currentUser.name;
   byId('nav-user-role').textContent = currentUser.role;
-  ['app-director','app-coop','app-finanzas'].forEach(i=>byId(i).classList.add('hidden'));
+  ['app-director','app-coop','app-finanzas','app-admin-productos'].forEach(i=>byId(i).classList.add('hidden'));
   if (['director','admin'].includes(currentUser.role)) byId('app-director').classList.remove('hidden');
   if (currentUser.role === 'cooperativa') byId('app-coop').classList.remove('hidden');
-  if (currentUser.role === 'admin') byId('app-finanzas').classList.remove('hidden');
+  if (currentUser.role === 'admin') {
+    byId('app-finanzas').classList.remove('hidden');
+    byId('app-admin-productos').classList.remove('hidden');
+  }
   refreshDataFromSheets();
 }
 async function logout() {
   const oldToken = tokenSesion;
   currentUser = null;tokenSesion = '';currentCart = [];
   catalogFamilias = [];catalogEstudiantes = [];catalogProductos = [];valesData = [];pagosData = [];
-  ['app-director','app-coop','app-finanzas','user-navbar-info'].forEach(i=>byId(i).classList.add('hidden'));
+  ['app-director','app-coop','app-finanzas','app-admin-productos','user-navbar-info'].forEach(i=>byId(i).classList.add('hidden'));
+  closeValeReview();closeProductModal();pendingValeRequestId='';
   byId('section-login').classList.remove('hidden');
   updateCartUI();
   if (oldToken) {tokenSesion = oldToken;try {await apiPost({action:'logout'});} catch {} finally {tokenSesion='';}}
@@ -780,7 +876,7 @@ function renderStudentsSelect() {
 }
 function renderProductsGrid() {
   const grid = byId('products-grid');
-  grid.innerHTML = catalogProductos.length ? catalogProductos.filter(p=>Number.isFinite(p.price)&&p.price>=0).map(p => `
+  grid.innerHTML = catalogProductos.some(p=>p.activo&&Number.isFinite(p.price)&&p.price>0) ? catalogProductos.filter(p=>p.activo&&Number.isFinite(p.price)&&p.price>0).map(p => `
     <button type="button" class="producto-btn p-3 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-2xl text-left space-y-1" data-product-id="${textoSeguro(p.id)}">
       <div class="flex items-center justify-between"><i class="fa-solid ${p.icon} ${p.color} text-lg"></i>
       <span class="text-xs font-bold text-[#9E1B32]">${dinero(p.price)}</span></div>
@@ -789,35 +885,97 @@ function renderProductsGrid() {
   grid.querySelectorAll('.producto-btn').forEach(el=>el.addEventListener('click',()=>addToCart(el.dataset.productId)));
 }
 function addToCart(prodId) {
-  const p = catalogProductos.find(x => x.id === String(prodId));
-  if (!p) return;
+  const p = catalogProductos.find(x => x.id === String(prodId) && x.activo);
+  if (!p) return alert('El producto ya no está disponible. Actualiza el catálogo.');
   const prev = currentCart.find(x=>x.id===p.id);
+  const totalUnits = currentCart.reduce((s, x)=>s+x.qty,0);
+  if (totalUnits >= 60 || (prev && prev.qty >= 20) || (!prev && currentCart.length>=30)) {
+    return alert('Límite del vale: 20 unidades por producto, 60 unidades en total y hasta 30 productos distintos.');
+  }
   if (prev) prev.qty++; else currentCart.push({...p,qty:1});
   pendingValeRequestId='';updateCartUI();
 }
 function removeFromCart(prodId) { currentCart=currentCart.filter(p=>p.id!==String(prodId));pendingValeRequestId='';updateCartUI(); }
 function updateCartUI() {
   const target = byId('cart-items-list');
-  target.innerHTML = currentCart.length ? currentCart.map(i=>`<div class="flex items-center justify-between p-2 bg-slate-50 rounded-xl">
-      <div class="min-w-0"><div class="font-bold text-slate-800">${textoSeguro(i.name)}</div><div class="text-[10px] text-slate-400">${dinero(i.price)} × ${i.qty}</div></div>
-      <div class="flex gap-2 items-center"><strong>${dinero(i.price*i.qty)}</strong><button type="button" class="remove-product text-rose-600" data-id="${textoSeguro(i.id)}" aria-label="Eliminar producto">×</button></div></div>`).join('') : '<div class="text-slate-400 italic text-center py-4">Agrega productos del menú...</div>';
+  target.innerHTML = currentCart.length ? currentCart.map(i=>`<div class="flex flex-col gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+    <div class="flex items-start justify-between gap-2">
+      <div class="min-w-0"><strong class="text-slate-800">${textoSeguro(i.name)}</strong>
+        <p class="text-[11px] text-slate-500">${dinero(i.price)} por unidad</p></div>
+      <button type="button" class="remove-product text-rose-700 text-xs underline" data-id="${textoSeguro(i.id)}" aria-label="Quitar ${textoSeguro(i.name)}">Eliminar</button>
+    </div>
+    <div class="flex items-center justify-between gap-2">
+      <div class="inline-flex items-center gap-2" role="group" aria-label="Cantidad de ${textoSeguro(i.name)}">
+        <button type="button" class="cart-decrease min-w-9 min-h-9 rounded-lg border border-slate-300 bg-white font-bold text-lg" data-id="${textoSeguro(i.id)}" aria-label="Disminuir ${textoSeguro(i.name)}">−</button>
+        <strong class="min-w-6 text-center" aria-live="polite">${i.qty}</strong>
+        <button type="button" class="cart-increase min-w-9 min-h-9 rounded-lg border border-slate-300 bg-white font-bold text-lg" data-id="${textoSeguro(i.id)}" aria-label="Aumentar ${textoSeguro(i.name)}">+</button>
+      </div>
+      <strong class="text-sm text-[#9E1B32]">${dinero(i.price*i.qty)}</strong>
+    </div>
+  </div>`).join('') : '<div class="text-slate-400 italic text-center py-4">Agrega productos del menú...</div>';
   target.querySelectorAll('.remove-product').forEach(b=>b.addEventListener('click',()=>removeFromCart(b.dataset.id)));
+  target.querySelectorAll('.cart-decrease').forEach(b=>b.addEventListener('click',()=>changeCartQty(b.dataset.id,-1)));
+  target.querySelectorAll('.cart-increase').forEach(b=>b.addEventListener('click',()=>changeCartQty(b.dataset.id,1)));
   byId('cart-item-count').textContent = currentCart.reduce((a,i)=>a+i.qty,0) + ' artículos';
   byId('cart-total-price').textContent = dinero(currentCart.reduce((a,i)=>a+i.qty*i.price,0));
+  byId('clear-cart-btn').disabled = currentCart.length===0;
+  byId('clear-cart-btn').classList.toggle('opacity-40',currentCart.length===0);
+  byId('review-vale-btn').disabled = currentCart.length===0;
+  byId('review-vale-btn').classList.toggle('opacity-40',currentCart.length===0);
 }
-async function submitVale() {
+function changeCartQty(prodId, delta) {
+  if (enviandoVale) return;
+  const item=currentCart.find(x=>x.id===String(prodId));
+  if (!item) return;
+  if (delta < 0 && item.qty===1) return removeFromCart(prodId);
+  const totalUnits=currentCart.reduce((s,x)=>s+x.qty,0);
+  if (delta>0 && (item.qty>=20 || totalUnits>=60)) return alert('Se alcanzó el máximo permitido de unidades.');
+  item.qty += delta;
+  pendingValeRequestId='';updateCartUI();
+}
+function clearCart() {
+  if (enviandoVale || !currentCart.length) return;
+  if (!confirm('¿Quitar todos los productos del vale? Aún no se ha enviado.')) return;
+  currentCart=[];pendingValeRequestId='';updateCartUI();
+}
+function openValeReview() {
   if (enviandoVale) return;
   const studentId=byId('select-student').value;
-  if (!studentId) return alert('Selecciona un alumno.');
-  if (!currentCart.length) return alert('Agrega un producto.');
+  const student=catalogEstudiantes.find(s=>s.id===studentId);
+  if (!student) return alert('Primero selecciona un alumno.');
+  if (!currentCart.length) return alert('Agrega al menos un producto.');
+  const content=byId('review-vale-content');
+  const lines=currentCart.map(i=>`<div class="flex justify-between gap-3 border-b py-1">
+    <span>${i.qty} × ${textoSeguro(i.name)}</span><strong>${dinero(i.qty*i.price)}</strong></div>`).join('');
+  const total=currentCart.reduce((s,i)=>s+i.qty*i.price,0);
+  content.innerHTML=`<p><strong>Alumno:</strong> ${textoSeguro(student.name)} (${textoSeguro(student.grado)})</p>
+    <p class="font-semibold mt-2">Productos</p>${lines}
+    <p class="flex justify-between text-base font-bold mt-3"><span>Total del vale</span><span>${dinero(total)}</span></p>`;
+  byId('modal-review-vale').classList.remove('hidden');
+  byId('modal-review-vale').classList.add('flex');
+  byId('confirm-send-vale-btn').focus();
+}
+function closeValeReview() {
+  const modal=byId('modal-review-vale');
+  modal.classList.add('hidden');modal.classList.remove('flex');
+}
+async function submitVale() {
+  if (enviandoVale || byId('modal-review-vale').classList.contains('hidden')) return;
+  const studentId=byId('select-student').value;
+  if (!catalogEstudiantes.some(x=>x.id===studentId) || !currentCart.length) return alert('Revisa alumno y productos.');
   if (!pendingValeRequestId) pendingValeRequestId=nuevaSolicitud();
-  enviandoVale=true;
+  const expectedTotal=Math.round(currentCart.reduce((s,i)=>s+i.qty*i.price,0)*100)/100;
+  enviandoVale=true;byId('confirm-send-vale-btn').disabled=true;
   try {
-    const result=await apiPost({action:'crearVale',studentId,items:currentCart.map(i=>({id:i.id,qty:i.qty})),requestId:pendingValeRequestId});
-    alert('Vale confirmado en Google Sheets. Folio: '+result.id);
-    currentCart=[];pendingValeRequestId='';updateCartUI();await refreshDataFromSheets();
-  } catch(e) {alert('No se confirmó el vale: '+e.message+'\nNo lo envíes otra vez sin revisar si se registró.');logConsole(e.message,'error');}
-  finally {enviandoVale=false;}
+    const result=await apiPost({action:'crearVale',studentId,
+      items:currentCart.map(i=>({id:i.id,qty:i.qty})),expectedTotal,requestId:pendingValeRequestId});
+    closeValeReview();currentCart=[];pendingValeRequestId='';updateCartUI();
+    alert('Vale confirmado en Google Sheets. Folio: '+result.id+' | Total: '+dinero(result.vale?.total ?? expectedTotal));
+    await refreshDataFromSheets();
+  } catch(e) {
+    alert('NO se confirmó el vale: '+e.message+'\nSi la conexión falló, revisa Sheets antes de repetir el envío.');
+    logConsole(e.message,'error');
+  } finally {enviandoVale=false;byId('confirm-send-vale-btn').disabled=false;}
 }
 async function loadValesAndPagos() {
   try {
@@ -897,11 +1055,79 @@ async function submitPayment(e) {
   } catch(err) {alert('No se confirmó el pago: '+err.message+'\nVerifica el registro antes de reintentarlo.');}
   finally {enviandoPago=false;}
 }
+// Dirección General: administrar productos sin editar manualmente Google Sheets.
+function renderAdminProducts() {
+  if (!currentUser || currentUser.role!=='admin') return;
+  const body=byId('admin-products-body');
+  body.innerHTML=catalogProductos.length ? catalogProductos.map(p=>`<tr class="border-b border-slate-100">
+    <td class="py-3 pr-3"><strong>${textoSeguro(p.name)}</strong><span class="text-xs text-slate-500 block">${textoSeguro(p.id)}</span></td>
+    <td class="py-3 pr-3 font-semibold">${dinero(p.price)}</td>
+    <td class="py-3 pr-3">${p.activo?'<span class="text-emerald-700 font-semibold">Activo</span>':'<span class="text-rose-700 font-semibold">Inactivo</span>'}</td>
+    <td class="py-3"><div class="flex flex-wrap gap-2">
+      <button type="button" class="edit-product border border-slate-300 rounded-lg px-3 py-1 text-xs" data-id="${textoSeguro(p.id)}">Editar</button>
+      <button type="button" class="toggle-product text-white rounded-lg px-3 py-1 text-xs ${p.activo?'bg-rose-700':'bg-emerald-700'}" data-id="${textoSeguro(p.id)}" data-active="${!p.activo}">${p.activo?'Desactivar':'Reactivar'}</button>
+    </div></td>
+  </tr>`).join('') : '<tr><td colspan="4" class="p-4 text-slate-500">Sin productos registrados.</td></tr>';
+  body.querySelectorAll('.edit-product').forEach(b=>b.addEventListener('click',()=>openProductModal(b.dataset.id)));
+  body.querySelectorAll('.toggle-product').forEach(b=>b.addEventListener('click',()=>toggleProduct(b.dataset.id,b.dataset.active==='true')));
+}
+function selectActualValue(el, valor) {
+  el.querySelectorAll('option[data-actual="true"]').forEach(o=>o.remove());
+  if (valor && !Array.from(el.options).some(o=>o.value===valor)) {
+    const opt=document.createElement('option');opt.value=valor;opt.textContent='Actual: '+valor;
+    opt.dataset.actual='true';el.appendChild(opt);
+  }
+  el.value=valor||'';
+}
+function openProductModal(id='') {
+  if (!currentUser || currentUser.role!=='admin') return;
+  const p=id ? catalogProductos.find(x=>x.id===id) : null;
+  if (id && !p) return alert('Producto no encontrado. Actualiza el catálogo.');
+  byId('product-modal-title').textContent=p?'Editar producto':'Nuevo producto';
+  byId('product-edit-id').value=p?.id||'';
+  byId('product-edit-name').value=p?.name||'';
+  byId('product-edit-price').value=p?.price??'';
+  selectActualValue(byId('product-edit-icon'),p?.rawIcon||'');
+  selectActualValue(byId('product-edit-color'),p?.rawColor||'');
+  byId('product-edit-active').checked=p?p.activo:true;
+  byId('modal-product').classList.remove('hidden');byId('modal-product').classList.add('flex');
+  byId('product-edit-name').focus();
+}
+function closeProductModal() {
+  byId('modal-product').classList.add('hidden');byId('modal-product').classList.remove('flex');
+}
+async function saveProduct(e) {
+  e.preventDefault();if(guardandoProducto || currentUser?.role!=='admin')return;
+  const nombre=byId('product-edit-name').value.trim();
+  const precio=Number(byId('product-edit-price').value);
+  if (!nombre || !Number.isFinite(precio) || precio<=0 || precio>10000 || Math.abs(precio*100-Math.round(precio*100))>0.000001)
+    return alert('Revisa el nombre y el precio (mayor a $0, máximo $10,000 y dos decimales).');
+  guardandoProducto=true;byId('save-product-btn').disabled=true;
+  try {
+    await apiPost({action:'guardarProducto',id:byId('product-edit-id').value,nombre,precio,
+      icono:byId('product-edit-icon').value,color:byId('product-edit-color').value,
+      activo:byId('product-edit-active').checked});
+    closeProductModal();await refreshDataFromSheets();alert('Producto guardado correctamente en Sheets.');
+  } catch(err) {alert('No se pudo guardar el producto: '+err.message);}
+  finally {guardandoProducto=false;byId('save-product-btn').disabled=false;}
+}
+async function toggleProduct(id,activo) {
+  if (currentUser?.role!=='admin')return;
+  const p=catalogProductos.find(x=>x.id===id);
+  if (!p) return;
+  if (!confirm('¿'+(activo?'Reactivar':'Desactivar')+' "'+p.name+'"?\nLos vales históricos no se modificarán.'))return;
+  try {
+    await apiPost({action:'cambiarEstadoProducto',id,activo});
+    await refreshDataFromSheets();
+    alert('Estado del producto actualizado en Sheets.');
+  } catch(err) {alert('No se actualizó el producto: '+err.message);}
+}
 window.addEventListener('DOMContentLoaded',()=>{
   byId('endpoint-input').value=API_BASE;
   byId('pay-amount').min='0.01';byId('pay-amount').step='0.01';
   byId('select-student').addEventListener('change', () => {pendingValeRequestId='';});
-  logConsole('SmartCoop v4 iniciado. Configura tu Worker e inicia sesión.');
+  logConsole('SmartCoop v4.1 iniciado. Conserva el Worker existente e inicia sesión.');
+  updateCartUI();
   if(API_BASE)verificarConexion();
 });
 
