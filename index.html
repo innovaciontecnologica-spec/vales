@@ -31,6 +31,8 @@
 
         /* SmartCoop: identidad institucional (no modifica los módulos) */
         .smartcoop-institutional-header { isolation: isolate; }
+        /* Diagnóstico oculto desde el primer render, sin bloquear la comprobación en segundo plano */
+        #section-diagnostic.hidden { display: none !important; }
         .brand-desktop { display:block; background:#fff; }
         .brand-desktop img { display:block; width:100%; height:auto; }
         .brand-mobile { display:none; }
@@ -91,9 +93,9 @@
                     <span class="smartcoop-brand-description">Gestión de vales, cooperativa y control de cobros</span>
                 </div>
                 <div class="smartcoop-brand-actions">
-                    <button id="btn-diagnostic-toggle" type="button" onclick="toggleDiagnostic()" class="bg-[#D4AF37] hover:bg-amber-500 text-[#00205B] font-bold px-4 py-2.5 rounded-2xl shadow-lg transition flex items-center gap-2 text-xs">
-                        <i class="fa-solid fa-plug-circle-bolt" aria-hidden="true"></i>
-                        <span>Diagnóstico de Conexión</span>
+                    <button id="btn-diagnostic-toggle" type="button" onclick="toggleDiagnostic()" aria-controls="section-diagnostic" aria-expanded="false" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold px-3 py-2 rounded-xl transition flex items-center gap-2 text-xs" title="Abrir u ocultar el estado de conexión">
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        <span>Estado del sistema</span>
                     </button>
                     <div id="user-navbar-info" class="hidden items-center gap-3 bg-blue-900/60 border border-blue-700/50 p-2 pl-4 rounded-2xl">
                         <div class="text-right text-xs">
@@ -110,7 +112,7 @@
 
 
 
-        <section id="section-diagnostic" class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <section id="section-diagnostic" class="hidden bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6" aria-label="Estado del sistema">
 
             <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-slate-100 pb-4">
 
@@ -120,7 +122,7 @@
 
                         <i class="fa-solid fa-network-wired text-[#D4AF37]"></i>
 
-                        Diagnóstico de Conexión
+                        Estado del sistema
 
                     </h2>
 
@@ -763,7 +765,12 @@ function logConsole(message, kind = 'info') {
   pane.scrollTop = pane.scrollHeight;
 }
 function clearConsole() {byId('diagnostic-console').textContent = '';}
-function toggleDiagnostic() {byId('section-diagnostic').classList.toggle('hidden');}
+function toggleDiagnostic() {
+  const panel = byId('section-diagnostic');
+  const boton = byId('btn-diagnostic-toggle');
+  panel.classList.toggle('hidden');
+  boton.setAttribute('aria-expanded', String(!panel.classList.contains('hidden')));
+}
 function connectionBadge(message, ok) {
   const el = byId('connection-status-badge');
   el.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold border ' +
@@ -891,6 +898,7 @@ async function processLogin(e) {
 function setupDashboardForUser() {
   byId('section-login').classList.add('hidden');
   byId('section-diagnostic').classList.add('hidden');
+  byId('btn-diagnostic-toggle').setAttribute('aria-expanded','false');
   byId('user-navbar-info').classList.remove('hidden');
   byId('user-navbar-info').classList.add('flex');
   byId('nav-user-name').textContent = currentUser.name;
@@ -931,7 +939,7 @@ function renderProductsGrid() {
       <div class="flex items-center justify-between"><i class="fa-solid ${p.icon} ${p.color} text-lg"></i>
       <span class="text-xs font-bold text-[#9E1B32]">${dinero(p.price)}</span></div>
       <div class="text-xs font-bold text-slate-800">${textoSeguro(p.name)}</div>
-    </button>`).join('') : '<p class="col-span-3 text-sm text-amber-700">No se han recibido productos. Revisa Diagnóstico de Conexión.</p>';
+    </button>`).join('') : '<p class="col-span-3 text-sm text-amber-700">No se han recibido productos. Revisa Estado del sistema.</p>';
   grid.querySelectorAll('.producto-btn').forEach(el=>el.addEventListener('click',()=>addToCart(el.dataset.productId)));
 }
 function addToCart(prodId) {
