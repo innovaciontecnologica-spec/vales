@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida | SmartCoop v4.3.2.4</title>
+    <title>Colegio Labastida | SmartCoop v4.3.2.6</title>
     <meta name="theme-color" content="#00205B">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
@@ -89,7 +89,7 @@
             <div class="smartcoop-brand-toolbar">
                 <div class="smartcoop-brand-meta">
                     <span class="smartcoop-official-label">Sistema Oficial</span>
-                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.4</span>
+                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.6</span>
                     <span class="smartcoop-brand-description">Gestión de vales, cooperativa y control de cobros</span>
                 </div>
                 <div class="smartcoop-brand-actions">
@@ -299,10 +299,28 @@
                             <option value="">-- Cargar Alumnos --</option>
 
                         </select>
-
+                        <div class="mt-4 border border-amber-200 bg-amber-50/70 rounded-xl p-4 space-y-3">
+                          <label class="block font-bold text-xs text-[#00205B]" for="vale-tipo">Tipo de vale</label>
+                          <select id="vale-tipo" class="w-full border border-amber-300 rounded-xl p-3 text-sm" onchange="cambiarTipoValeV4326()">
+                            <option value="Ordinario">Vale ordinario — paga la familia del beneficiario</option>
+                            <option value="Incidente">Reposición por incidente — otras familias pagan</option>
+                          </select>
+                          <div id="incidente-panel" class="hidden space-y-3">
+                            <p class="text-xs text-amber-900">La persona beneficiaria recibe los alimentos, pero no tendrá este cargo. Elige las familias designadas para pagarlo y registra el motivo. La dirección emisora asigna los cargos directamente; quedarán auditados.</p>
+                            <label class="block text-xs font-bold" for="incidente-motivo">Motivo de reposición (obligatorio)</label>
+                            <textarea id="incidente-motivo" maxlength="500" rows="2" class="border rounded-xl p-3 w-full text-sm" placeholder="Ej.: Reposición de lunch por incidente escolar. Cargo asignado por la dirección." oninput="pendingValeRequestId=''" ></textarea>
+                            <label class="block text-xs font-bold" for="incidente-buscar">Familias designadas para el pago</label>
+                            <input id="incidente-buscar" class="w-full border rounded-lg p-2 text-sm" placeholder="Buscar alumno o familia" oninput="renderResponsablesIncidenteV4326()">
+                            <div id="incidente-responsables" class="max-h-52 overflow-y-auto bg-white border rounded-lg p-2 space-y-2 text-xs"></div>
+                            <label class="block text-xs font-bold" for="incidente-distribucion">Distribución del importe</label>
+                            <select id="incidente-distribucion" class="w-full border rounded-lg p-2 text-sm" onchange="pendingValeRequestId='';renderResponsablesIncidenteV4326()">
+                              <option value="Equitativa">Dividir el total por igual entre las familias</option>
+                              <option value="Personalizada">Capturar un importe para cada familia</option>
+                            </select>
+                            <p id="incidente-resumen" class="text-xs font-semibold text-amber-950" aria-live="polite"></p>
+                          </div>
+                        </div>
                     </div>
-
-
 
                     <!-- Menú de Productos -->
 
@@ -409,6 +427,19 @@
             </div>
 
 
+
+            <section class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3" aria-label="Totales diarios de Cooperativa">
+              <div class="flex flex-wrap justify-between items-center gap-3">
+                <h3 class="text-sm font-bold text-[#00205B]"><i class="fa-solid fa-chart-column mr-1"></i> Gran total diario de Cooperativa</h3>
+                <label class="text-xs font-semibold">Fecha de entrega <input id="coop-fecha-v4326" type="date" onchange="renderTotalCoopV4326()" class="border border-slate-300 rounded-lg p-2 ml-1"></label>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl"><p class="text-xs text-emerald-800">Total entregado en vales vigentes</p><p id="coop-total-dia-v4326" class="text-xl font-bold text-emerald-900">$0.00</p></div>
+                <div class="bg-slate-50 border p-3 rounded-xl"><p class="text-xs text-slate-600">Cantidad de vales entregados</p><p id="coop-numero-dia-v4326" class="text-xl font-bold text-[#00205B]">0</p></div>
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl"><p class="text-xs text-amber-800">Entregas canceladas después</p><p id="coop-cancelados-dia-v4326" class="text-xl font-bold text-amber-900">0</p></div>
+              </div>
+              <p class="text-xs text-slate-500">Se cuenta una entrega por vale, aunque su coste se distribuya entre varias familias. No equivale al dinero cobrado por Caja.</p>
+            </section>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -518,6 +549,19 @@
 
             </div>
 
+        </main>
+
+        <!-- Dirección General: cancelación controlada; nunca borra pagos ni folios -->
+        <main id="app-cancelaciones-v4326" class="hidden space-y-3">
+          <section class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div><h2 class="font-bold text-lg text-[#00205B]"><i class="fa-solid fa-ban mr-2 text-rose-700"></i>Cancelación de vales — Dirección General</h2>
+              <p class="text-xs text-slate-500">El vale cancelado conserva su folio e historial. Si tiene pagos, requiere un ajuste o devolución supervisada antes de cancelarlo.</p></div>
+              <button type="button" onclick="loadValesAndPagos()" class="border rounded-lg text-xs px-3 py-2">Actualizar vales</button>
+            </div>
+            <input id="cancelar-busqueda-v4326" type="search" oninput="renderCancelacionesV4326()" class="border rounded-xl p-3 w-full text-sm" placeholder="Buscar folio o alumno">
+            <div id="cancelaciones-lista-v4326" class="max-h-[420px] overflow-y-auto space-y-2"></div>
+          </section>
         </main>
 
         <!-- Perfil CAJA: sólo cobros de vales Entregados y comprobantes propios -->
@@ -804,7 +848,9 @@ let currentUser = null;
 let tokenSesion = '';
 let cambioClaveObligatorio = false;
 let catalogFamilias = [], catalogEstudiantes = [], catalogProductos = [];
-let valesData = [], pagosData = [], currentCart = [];
+let valesData = [], pagosData = [], catalogCargos = [], currentCart = [];
+let responsablesIncidenteV4326 = new Map();
+let cancelandoValeV4326 = false;
 let enviandoVale = false, guardandoProducto = false;
 let pendingValeRequestId = '';
 let guardandoAlumno = false;
@@ -927,12 +973,13 @@ async function refreshDataFromSheets() {
     }
     valesData = Array.isArray(data.vales) ? data.vales : [];
     pagosData = Array.isArray(data.pagos) ? data.pagos : [];
+    catalogCargos = Array.isArray(data.cargos) ? data.cargos : [];
     connectionBadge('Catálogo: ' + catalogProductos.length + ' productos', catalogProductos.length > 0);
     logConsole('Catálogos recibidos: ' + catalogProductos.length + ' productos, ' + catalogEstudiantes.length + ' alumnos.');
-    renderProductsGrid(); renderStudentsSelect();
+    renderProductsGrid(); renderStudentsSelect();renderResponsablesIncidenteV4326();
     if (currentUser && currentUser.role === 'cooperativa') renderKanban();
     if (currentUser && currentUser.role === 'admin') {
-      renderFinanzas();renderAdminProducts();
+      renderFinanzas();renderAdminProducts();renderCancelacionesV4326();
       // El historial es opcional y pesado; solo se consulta al pulsar Buscar.
       // La caja se actualiza enseguida, sin impedir que se use el catálogo.
       await cargarCaja();
@@ -967,7 +1014,7 @@ function setupDashboardForUser(requiereCambio = false) {
   byId('nav-user-name').textContent = currentUser.name;
   byId('nav-user-role').textContent = currentUser.role;
   byId('btn-admin-claves').classList.toggle('hidden', currentUser.role !== 'admin');
-  ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja','app-historial-v43'].forEach(i=>byId(i).classList.add('hidden'));
+  ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja','app-historial-v43','app-cancelaciones-v4326'].forEach(i=>byId(i).classList.add('hidden'));
   if (requiereCambio) return;
   if (['director','admin'].includes(currentUser.role)) byId('app-director').classList.remove('hidden');
   if (currentUser.role === 'cooperativa') byId('app-coop').classList.remove('hidden');
@@ -976,6 +1023,7 @@ function setupDashboardForUser(requiereCambio = false) {
     byId('app-finanzas').classList.remove('hidden');
     byId('app-admin-productos').classList.remove('hidden');
     byId('app-historial-v43').classList.remove('hidden');
+    byId('app-cancelaciones-v4326').classList.remove('hidden');
   }
   refreshDataFromSheets();
 }
@@ -1169,6 +1217,74 @@ function clearCart() {
   if (!confirm('¿Quitar todos los productos del vale? Aún no se ha enviado.')) return;
   currentCart=[];pendingValeRequestId='';updateCartUI();
 }
+
+// ------------------------ SMARTCOOP v4.3.2.6 -------------------------------
+function cambiarTipoValeV4326(){
+  const panel=byId('incidente-panel');
+  panel.classList.toggle('hidden',byId('vale-tipo').value!=='Incidente');
+  pendingValeRequestId='';renderResponsablesIncidenteV4326();
+}
+function cambiarResponsableV4326(id,checked){
+  if(checked){
+    const alumno=catalogEstudiantes.find(x=>x.id===id);
+    if(!alumno)return;
+    for(const elegido of responsablesIncidenteV4326.keys()){
+      if(catalogEstudiantes.find(x=>x.id===elegido)?.familyId===alumno.familyId){
+        alert('Ya seleccionaste otro alumno de la misma familia. Debe existir un único cargo por familia.');
+        renderResponsablesIncidenteV4326();return;
+      }
+    }
+    responsablesIncidenteV4326.set(id,'');
+  }else responsablesIncidenteV4326.delete(id);
+  pendingValeRequestId='';renderResponsablesIncidenteV4326();
+}
+function importeResponsableV4326(id,value){
+  responsablesIncidenteV4326.set(id,value);pendingValeRequestId='';actualizarResumenIncidenteV4326();
+}
+function obtenerAsignacionIncidenteV4326(total){
+  if(byId('vale-tipo').value!=='Incidente')return null;
+  const motivo=byId('incidente-motivo').value.trim();
+  if(!motivo||motivo.length>500)throw new Error('Describe brevemente el motivo del incidente.');
+  const ids=[...responsablesIncidenteV4326.keys()];
+  if(!ids.length||ids.length>12)throw new Error('Selecciona de 1 a 12 responsables.');
+  const studentId=byId('select-student').value;
+  const familiares=ids.map(id=>catalogEstudiantes.find(x=>x.id===id));
+  if(familiares.some(a=>!a||a.id===studentId||a.familyId===catalogEstudiantes.find(x=>x.id===studentId)?.familyId))throw new Error('La persona beneficiaria no puede ser responsable del cargo.');
+  if(new Set(familiares.map(a=>a.familyId)).size!==ids.length)throw new Error('Selecciona solamente un alumno por familia.');
+  const distribucion=byId('incidente-distribucion').value;
+  const resultado=ids.map(id=>({studentId:id,...(distribucion==='Personalizada'?{amount:Number(responsablesIncidenteV4326.get(id))}:{})}));
+  if(distribucion==='Personalizada'){
+    const suma=resultado.reduce((x,r)=>x+Math.round(r.amount*100),0);
+    if(resultado.some(x=>!Number.isFinite(x.amount)||x.amount<=0||Math.abs(x.amount*100-Math.round(x.amount*100))>1e-5)||suma!==Math.round(total*100)){
+      throw new Error('Los importes personalizados deben ser positivos y sumar exactamente '+dinero(total));
+    }
+  }
+  return {tipoVale:'Incidente',motivoIncidente:motivo,distribucion,responsables:resultado};
+}
+function actualizarResumenIncidenteV4326(){
+  const n=responsablesIncidenteV4326.size;
+  const total=currentCart.reduce((sum,item)=>sum+item.price*item.qty,0);
+  const personalizado=byId('incidente-distribucion').value==='Personalizada';
+  const suma=[...responsablesIncidenteV4326.values()].reduce((s,x)=>s+(Number(x)||0),0);
+  byId('incidente-resumen').textContent=n?`${n} familias designadas · Total del vale: ${dinero(total)}${personalizado?' · Distribuido: '+dinero(suma):' · Reparto equitativo'}`:'Selecciona quiénes asumirán los cargos. La alumna beneficiaria no pagará el vale.';
+}
+function renderResponsablesIncidenteV4326(){
+  const cont=byId('incidente-responsables');if(!cont)return;
+  const q=byId('incidente-buscar').value.trim().toLocaleLowerCase('es-MX');
+  const beneficiario=byId('select-student').value;
+  const personalizado=byId('incidente-distribucion').value==='Personalizada';
+  const familias=new Map(catalogFamilias.map(f=>[f.id,f.name]));
+  const alumnos=catalogEstudiantes.filter(a=>a.id!==beneficiario&&(
+    a.name.toLocaleLowerCase('es-MX').includes(q)||String(familias.get(a.familyId)||'').toLocaleLowerCase('es-MX').includes(q)));
+  cont.innerHTML=alumnos.slice(0,80).map(a=>{
+    const checked=responsablesIncidenteV4326.has(a.id);
+    return `<div class="flex items-center gap-2 border-b p-1.5 flex-wrap"><label class="flex-1"><input type="checkbox" class="inc-responsable-v4326 mr-2" data-id="${textoSeguro(a.id)}" ${checked?'checked':''}>${textoSeguro(a.name)} <small class="block text-slate-500">${textoSeguro(familias.get(a.familyId)||'Sin familia')} · ${textoSeguro(a.grado)}</small></label>${checked&&personalizado?`<input type="number" class="inc-monto-v4326 border rounded-lg p-2 w-28" step="0.01" min="0.01" placeholder="$ Cargo" data-id="${textoSeguro(a.id)}" value="${textoSeguro(responsablesIncidenteV4326.get(a.id))}">`:''}</div>`;
+  }).join('')||'<p class="text-slate-500 p-2">No hay alumnos que coincidan con la búsqueda.</p>';
+  cont.querySelectorAll('.inc-responsable-v4326').forEach(el=>el.addEventListener('change',()=>cambiarResponsableV4326(el.dataset.id,el.checked)));
+  cont.querySelectorAll('.inc-monto-v4326').forEach(el=>el.addEventListener('input',()=>importeResponsableV4326(el.dataset.id,el.value)));
+  actualizarResumenIncidenteV4326();
+}
+
 function openValeReview() {
   if (enviandoVale) return;
   const studentId=byId('select-student').value;
@@ -1179,9 +1295,12 @@ function openValeReview() {
   const lines=currentCart.map(i=>`<div class="flex justify-between gap-3 border-b py-1">
     <span>${i.qty} × ${textoSeguro(i.name)}</span><strong>${dinero(i.qty*i.price)}</strong></div>`).join('');
   const total=currentCart.reduce((s,i)=>s+i.qty*i.price,0);
+  let inc=null;try{inc=obtenerAsignacionIncidenteV4326(total);}catch(e){return alert(e.message);}
+  const distribucion=inc?.responsables.map((x,i)=>({nombre:catalogEstudiantes.find(a=>a.id===x.studentId)?.name||x.studentId,importe:inc.distribucion==='Personalizada'?x.amount:(Math.floor(Math.round(total*100)/inc.responsables.length)+(i<(Math.round(total*100)%inc.responsables.length)?1:0))/100}))||[];
+  const indicacion=inc?`<div class="mt-2 p-2 rounded-lg bg-amber-50"><strong>Reposición por incidente:</strong> ${textoSeguro(inc.motivoIncidente)}<p class="font-semibold mt-1">Cargos familiares asignados</p>${distribucion.map(x=>`<p class="flex justify-between"><span>${textoSeguro(x.nombre)}</span><strong>${dinero(x.importe)}</strong></p>`).join('')}</div>`:'';
   content.innerHTML=`<p><strong>Alumno:</strong> ${textoSeguro(student.name)} (${textoSeguro(student.grado)})</p>
     <p class="font-semibold mt-2">Productos</p>${lines}
-    <p class="flex justify-between text-base font-bold mt-3"><span>Total del vale</span><span>${dinero(total)}</span></p>`;
+    <p class="flex justify-between text-base font-bold mt-3"><span>Total del vale</span><span>${dinero(total)}</span></p>${indicacion}`;
   byId('modal-review-vale').classList.remove('hidden');
   byId('modal-review-vale').classList.add('flex');
   byId('confirm-send-vale-btn').focus();
@@ -1197,12 +1316,14 @@ async function submitVale() {
   if (!catalogEstudiantes.some(x=>x.id===studentId) || !currentCart.length) return alert('Revisa alumno y productos.');
   if (!pendingValeRequestId) pendingValeRequestId=nuevaSolicitud();
   const expectedTotal=Math.round(currentCart.reduce((s,i)=>s+i.qty*i.price,0)*100)/100;
+  let incidente=null;try{incidente=obtenerAsignacionIncidenteV4326(expectedTotal);}catch(e){return alert(e.message);}
   enviandoVale=true;byId('confirm-send-vale-btn').disabled=true;
   byId('confirm-send-vale-btn').textContent='Enviando vale… espera un momento';
   try {
     const result=await apiPost({action:'crearVale',studentId,
-      items:currentCart.map(i=>({id:i.id,qty:i.qty})),expectedTotal,requestId:pendingValeRequestId});
-    closeValeReview();currentCart=[];pendingValeRequestId='';updateCartUI();
+      items:currentCart.map(i=>({id:i.id,qty:i.qty})),expectedTotal,requestId:pendingValeRequestId,...(incidente||{tipoVale:'Ordinario'})});
+    enviandoVale=false;closeValeReview();currentCart=[];pendingValeRequestId='';responsablesIncidenteV4326.clear();
+    byId('vale-tipo').value='Ordinario';byId('incidente-motivo').value='';cambiarTipoValeV4326();updateCartUI();
     alert('Vale confirmado en Google Sheets. Folio: '+result.id+' | Total: '+dinero(result.vale?.total ?? expectedTotal));
     await refreshDataFromSheets();
   } catch(e) {
@@ -1215,7 +1336,7 @@ async function loadValesAndPagos() {
     const data=await apiPost({action:'getValesYPagos'});
     valesData=data.vales||[];pagosData=data.pagos||[];
     if (currentUser.role==='cooperativa') renderKanban();
-    if (currentUser.role==='admin') renderFinanzas();
+    if (currentUser.role==='admin'){renderFinanzas();renderCancelacionesV4326();}
   } catch(e) {logConsole('No se actualizaron los pedidos: '+e.message,'error');}
 }
 function renderKanban() {
@@ -1225,11 +1346,29 @@ function renderKanban() {
     byId(count).textContent=String(items.length);
     byId(col).innerHTML=items.map(v=>`<div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
       <div class="flex justify-between gap-2"><strong class="text-xs text-[#00205B]">${textoSeguro(v.studentName)}</strong><strong class="text-xs text-[#9E1B32]">${dinero(v.total)}</strong></div>
-      <p class="text-xs bg-slate-50 rounded-lg p-2">${textoSeguro(v.items)}</p><p class="text-[10px] text-slate-500">Autorizó: ${textoSeguro(v.createdBy)}</p>
+      <p class="text-xs bg-slate-50 rounded-lg p-2">${textoSeguro(v.items)}</p>${v.tipoVale==='Incidente'?`<p class="text-xs text-amber-900 bg-amber-50 rounded p-2"><strong>Reposición por incidente:</strong> ${textoSeguro(v.motivoIncidente)} · El cobro corresponde a familias designadas, no a la beneficiaria.</p>`:''}<p class="text-[10px] text-slate-500">Autorizó: ${textoSeguro(v.createdBy)}</p>
       ${status==='Entregado'?'<small class="text-emerald-700">Entregado</small>':`<button type="button" class="change-status bg-blue-800 text-white rounded-lg py-1.5 px-3 text-xs" data-id="${textoSeguro(v.id)}" data-new-status="${status==='Creado'?'En preparación':'Entregado'}">${status==='Creado'?'Preparar':'Entregar'}</button>`}</div>`).join('');
     byId(col).querySelectorAll('.change-status').forEach(b=>b.addEventListener('click',()=>updateStatus(b.dataset.id,b.dataset.newStatus)));
   });
+  renderTotalCoopV4326();
 }
+
+function fechaCoopV4326(fecha){
+  const d=new Date(fecha);if(Number.isNaN(d.getTime()))return '';
+  const parts=new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+  const get=t=>parts.find(x=>x.type===t)?.value||'';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+function renderTotalCoopV4326(){
+  const dia=byId('coop-fecha-v4326')?.value;
+  if(!dia)return;
+  const entregados=valesData.filter(v=>v.status==='Entregado'&&fechaCoopV4326(v.deliveredAt)===dia);
+  const cancelados=valesData.filter(v=>v.status==='Cancelado'&&v.deliveredAt&&fechaCoopV4326(v.deliveredAt)===dia);
+  byId('coop-numero-dia-v4326').textContent=String(entregados.length);
+  byId('coop-total-dia-v4326').textContent=dinero(entregados.reduce((sum,v)=>sum+Number(v.total||0),0));
+  byId('coop-cancelados-dia-v4326').textContent=String(cancelados.length);
+}
+
 async function updateStatus(id,status) {
   try {await apiPost({action:'updateValeStatus',id,status});await loadValesAndPagos();}
   catch(e) {alert('No se pudo guardar el nuevo estado: '+e.message);}
@@ -1241,13 +1380,15 @@ function renderFinanzas() {
     const alumnos=catalogEstudiantes.filter(s=>s.familyId===f.id);
     const entries=alumnos.map(s=>{
       const vales=valesData.filter(v=>v.studentId===s.id);
-      const totalVales=vales.reduce((a,v)=>a+Number(v.total||0),0);
+      const normales=vales.filter(v=>v.status!=='Cancelado'&&v.tipoVale!=='Incidente');
+      const cargos=catalogCargos.filter(c=>c.studentId===s.id&&c.status==='Vigente'&&valesData.some(v=>v.id===c.valeId&&v.status==='Entregado'));
+      const totalVales=normales.reduce((a,v)=>a+Number(v.total||0),0)+cargos.reduce((a,c)=>a+Number(c.total||0),0);
       const totalPagos=pagosData.filter(p=>p.studentId===s.id).reduce((a,p)=>a+Number(p.amount||0),0);
-      const subtotal=filterDir==='ALL'?totalVales:vales.filter(v=>v.createdBy===filterDir).reduce((a,v)=>a+Number(v.total||0),0);
+      const subtotal=filterDir==='ALL'?totalVales:normales.filter(v=>v.createdBy===filterDir).reduce((a,v)=>a+Number(v.total||0),0)+cargos.filter(c=>valesData.some(v=>v.id===c.valeId&&v.createdBy===filterDir)).reduce((a,c)=>a+Number(c.total||0),0);
       return `<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
       <strong class="text-sm">${textoSeguro(s.name)}</strong><span class="text-xs text-slate-500 block">${textoSeguro(s.grado)}</span>
       ${filterDir==='ALL'?'':`<p class="text-xs">Consumos de esta dirección: ${dinero(subtotal)}</p>`}
-      <p class="text-xs">Total de consumos: ${dinero(totalVales)} | Abonos: ${dinero(totalPagos)}</p>
+      <p class="text-xs">Total de consumos y reposiciones a cargo: ${dinero(totalVales)} | Abonos: ${dinero(totalPagos)}</p>${cargos.length?`<p class="text-xs text-amber-800">Incluye ${dinero(cargos.reduce((a,c)=>a+Number(c.total||0),0))} de reposición por incidente.</p>`:''}
       <strong class="text-sm text-[#9E1B32]">Saldo global: ${dinero(totalVales-totalPagos)}</strong>
       <p class="text-xs text-slate-500">Solo los vales Entregados pueden cobrarse desde el panel «Cobros por vale».</p></div>`;
     }).join('');
@@ -1405,6 +1546,37 @@ async function toggleProduct(id,activo) {
 // =======================================================
 // SMARTCOOP 4.2: CAJA | COBROS Y COMPROBANTES
 // =======================================================
+
+function renderCancelacionesV4326(){
+  if(currentUser?.role!=='admin')return;
+  const q=byId('cancelar-busqueda-v4326').value.toLocaleLowerCase('es-MX').trim();
+  const vales=valesData.filter(v=>!q||[v.id,v.studentName].some(x=>String(x).toLocaleLowerCase('es-MX').includes(q))).slice().reverse().slice(0,120);
+  const cont=byId('cancelaciones-lista-v4326');
+  cont.innerHTML=vales.map(v=>{
+    const cargos=catalogCargos.filter(c=>c.valeId===v.id);
+    const pagos=pagosData.filter(p=>p.valeId===v.id||cargos.some(c=>c.id===p.valeId));
+    const legacy=v.status==='Entregado'&&v.tipoVale!=='Incidente'&&pagosData.some(p=>!p.valeId&&p.studentId===v.studentId);
+    const bloqueado=pagos.length>0||legacy;
+    return `<div class="border rounded-xl p-3 flex flex-wrap justify-between gap-3 items-center"><div class="text-sm"><strong>${textoSeguro(v.studentName)}</strong><small class="block text-slate-500">${textoSeguro(v.id)} · ${textoSeguro(v.status)} · ${dinero(v.total)} · ${textoSeguro(v.tipoVale||'Ordinario')}</small>${v.status==='Cancelado'?`<small class="text-rose-800">Motivo: ${textoSeguro(v.motivoCancelacion||'Registrado en auditoría')}</small>`:''}${bloqueado?'<small class="text-amber-800 block">Con pagos: requiere ajuste/devolución, no cancelación simple</small>':''}</div><button type="button" class="cancelar-vale-v4326 rounded-lg px-3 py-2 text-xs font-bold ${v.status==='Cancelado'||bloqueado?'bg-slate-200 text-slate-500':'bg-rose-700 text-white'}" data-id="${textoSeguro(v.id)}" ${v.status==='Cancelado'||bloqueado?'disabled':''}>${v.status==='Cancelado'?'Cancelado':'Cancelar'}</button></div>`;
+  }).join('')||'<p class="text-slate-500 p-3">No se encontraron vales.</p>';
+  cont.querySelectorAll('.cancelar-vale-v4326').forEach(b=>b.addEventListener('click',()=>cancelarValeV4326(b.dataset.id)));
+}
+async function cancelarValeV4326(id){
+  if(cancelandoValeV4326||currentUser?.role!=='admin')return;
+  const v=valesData.find(x=>x.id===id);if(!v)return alert('Actualiza la lista de vales.');
+  const motivo=prompt('Dirección General: escribe el motivo obligatorio para cancelar el vale '+id+':');
+  if(motivo===null)return;
+  if(!motivo.trim()||motivo.trim().length>500)return alert('Indica un motivo de 1 a 500 caracteres.');
+  if(!confirm('¿Confirmas la CANCELACIÓN del vale '+id+'? No se eliminará el historial.'))return;
+  cancelandoValeV4326=true;
+  try{
+    await apiPost({action:'cancelarVale',id,motivo:motivo.trim()});
+    alert('Vale cancelado y registrado en auditoría. Folio: '+id);
+    await refreshDataFromSheets();
+  }catch(e){alert('No se confirmó la cancelación: '+e.message);}
+  finally{cancelandoValeV4326=false;}
+}
+
 async function cargarCaja(actualizarReporte=true) {
   if (!['caja','admin'].includes(currentUser?.role)) return;
   try {
@@ -1438,7 +1610,7 @@ function renderCaja() {
   const cont=byId('caja-pendientes');
   cont.innerHTML=filtrados.length?filtrados.map(v=>`<div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
     <div class="flex justify-between gap-2"><strong class="text-[#00205B] text-sm">${textoSeguro(v.studentName)}</strong><span class="text-emerald-700 font-bold text-xs">ENTREGADO</span></div>
-    <p class="text-xs text-slate-500">Folio: ${textoSeguro(v.id)}</p>
+    <p class="text-xs text-slate-500">Folio cobrable: ${textoSeguro(v.id)}${v.tipo==='Incidente'?' · Reposición por incidente, vale '+textoSeguro(v.valeOrigen):''}</p>${v.tipo==='Incidente'?`<p class="text-xs text-amber-900">Familia designada: ${textoSeguro(v.studentName)} · Beneficiario: ${textoSeguro(v.beneficiario)}</p>`:''}
     <p class="text-sm">${textoSeguro(v.items)}</p>
     <p class="text-xs">Total del vale: ${dinero(v.total)}</p>
     <div class="flex justify-between items-center gap-2"><strong class="text-rose-800 text-sm">Pendiente ${dinero(v.saldo)}</strong>
@@ -1511,7 +1683,8 @@ function fechaReciboCaja(v) {
 }
 function textoReciboCaja(r) {
   return 'Colegio Labastida | Comprobante de pago SmartCoop\n'+
-    'Folio de pago: '+r.id+'\nVale entregado: '+r.valeId+'\nAlumno: '+r.studentName+'\n'+
+    'Folio de pago: '+r.id+'\n'+(r.tipo==='Incidente'?'Cargo por incidente: '+r.valeId+'\nVale de reposición: '+r.valeOrigen+'\nFamilia designada: ':'Vale entregado: '+r.valeId+'\nAlumno: ')+r.studentName+'\n'+
+    (r.tipo==='Incidente'?'Motivo de reposición: '+(r.motivoIncidente||'Reposición escolar')+'\n':'')+
     'Fecha: '+fechaReciboCaja(r.date)+'\nCobrado: '+dinero(r.amount)+'\n'+
     'Método: '+r.metodoPago+'\nSaldo del vale tras el cobro: '+dinero(r.saldoVale)+'\n'+
     'Registró: '+r.registradoPor+'\nConserve este comprobante.';
@@ -1530,11 +1703,12 @@ function imprimirReciboCaja(id) {
     '@media print{button{display:none}body{margin:16mm}}</style></head><body>'+
     '<h1>Colegio Labastida</h1><p class="tag">COMPROBANTE DE PAGO · SMARTCOOP</p>'+
     '<div class="line"><span>Folio de pago</span><strong>'+f(r.id)+'</strong></div>'+
-    '<div class="line"><span>Folio del vale</span><strong>'+f(r.valeId)+'</strong></div>'+
+    '<div class="line"><span>'+(r.tipo==='Incidente'?'Cargo familiar / vale principal':'Folio del vale')+'</span><strong>'+f(r.valeId)+(r.tipo==='Incidente'?' / '+f(r.valeOrigen):'')+'</strong></div>'+
     '<div class="line"><span>Alumno</span><strong>'+f(r.studentName)+'</strong></div>'+
+    (r.tipo==='Incidente'?'<div class="line"><span>Motivo de reposición</span><strong>'+f(r.motivoIncidente||'Reposición escolar')+'</strong></div>':'')+
     '<div class="line"><span>Fecha</span><strong>'+f(fechaReciboCaja(r.date))+'</strong></div>'+
     '<div class="line"><span>Productos</span><strong>'+f(r.items)+'</strong></div>'+
-    '<div class="line"><span>Total del vale</span><strong>'+dinero(r.totalVale)+'</strong></div>'+
+    '<div class="line"><span>'+(r.tipo==='Incidente'?'Importe del cargo familiar':'Total del vale')+'</span><strong>'+dinero(r.totalVale)+'</strong></div>'+
     '<div class="line"><span>Método</span><strong>'+f(r.metodoPago)+'</strong></div>'+
     '<div class="line total"><span>Pago recibido</span><span>'+dinero(r.amount)+'</span></div>'+
     '<div class="line"><span>Saldo después del pago</span><strong>'+dinero(r.saldoVale)+'</strong></div>'+
@@ -1600,12 +1774,12 @@ function renderHistorialV43() {
   byId('historial-contador-v43').textContent=historialValesV43.length+' de '+historialTotalV43+' vales';
   byId('historial-cargar-mas-v43').classList.toggle('hidden',!historialHayMasV43);
   byId('historial-lista-v43').innerHTML=historialValesV43.length ? historialValesV43.map(v=>{
-    const status=v.status==='Entregado'?(Number(v.saldo)===0?'Liquidado':(Number(v.saldo)<Number(v.total)?'Abono parcial':'Pendiente de cobro')):'Pendiente de entrega';
+    const status=v.status==='Cancelado'?'Cancelado':v.status==='Entregado'?(Number(v.saldo)===0?'Liquidado':(Number(v.saldo)<Number(v.total)?'Abono parcial':'Pendiente de cobro')):'Pendiente de entrega';
     const historial=v.pagosDirectos.map(p=>`<tr class="border-b"><td class="p-2">${escV43(fmtFechaV43(p.date))}</td><td class="p-2">${escV43(p.id)}</td><td class="p-2">${escV43(p.registradoPor)}</td><td class="p-2">${escV43(p.metodoPago||'Sin método')}</td><td class="p-2 font-bold">${dinero(p.amount)}</td><td class="p-2"><button class="recibo-historico-v43 rounded border px-2 py-1 text-xs" type="button" data-id="${escV43(p.id)}">Ver recibo</button></td></tr>`).join('');
     return `<details class="border border-slate-200 bg-white rounded-xl p-3"><summary class="cursor-pointer list-none flex flex-wrap justify-between items-center gap-2">
     <span><strong class="text-[#00205B]">${escV43(v.studentName)}</strong><small class="block text-slate-500">${escV43(v.id)} · ${escV43(fmtFechaV43(v.date))} · ${escV43(status)}</small></span>
     <span class="font-bold">${dinero(v.total)} <small class="block font-normal text-right">${v.saldo===null?'No entregado':'Pendiente '+dinero(v.saldo)}</small></span></summary>
-    <p class="my-2 text-sm text-slate-600">${escV43(v.items)}</p><p class="text-xs text-slate-500">Autorizó ${escV43(v.createdBy)} · Pagos directos ${dinero(v.totalDirecto)} ${Number(v.aplicadoAnteriorEstimado)>0?'· Posible aplicación de abonos anteriores '+dinero(v.aplicadoAnteriorEstimado):''}</p>
+    <p class="my-2 text-sm text-slate-600">${escV43(v.items)}</p>${v.tipoVale==='Incidente'?`<p class="text-xs text-amber-900">Reposición por incidente: ${escV43(v.motivoIncidente)} · ${v.cargos.map(c=>escV43(c.nombre)+' ('+dinero(c.importe)+')').join(', ')}</p>`:''}${v.status==='Cancelado'?`<p class="text-xs text-rose-800">Cancelación: ${escV43(v.motivoCancelacion)}</p>`:''}<p class="text-xs text-slate-500">Autorizó ${escV43(v.createdBy)} · Pagos directos ${dinero(v.totalDirecto)} ${Number(v.aplicadoAnteriorEstimado)>0?'· Posible aplicación de abonos anteriores '+dinero(v.aplicadoAnteriorEstimado):''}</p>
     <div class="overflow-x-auto mt-3"><table class="w-full text-xs text-left"><thead><tr class="border-b"><th class="p-2">Fecha</th><th class="p-2">Folio pago</th><th class="p-2">Responsable</th><th class="p-2">Método</th><th class="p-2">Importe</th><th class="p-2">Comprobante</th></tr></thead><tbody>${historial||'<tr><td colspan="6" class="p-3 text-slate-500">No hay pagos directos asociados a este folio.</td></tr>'}</tbody></table></div></details>`;
   }).join(''):'<p class="text-sm text-slate-500">No se encontraron vales.</p>';
   byId('historial-lista-v43').querySelectorAll('.recibo-historico-v43').forEach(b=>b.addEventListener('click',()=>verReciboHistoricoV43(b.dataset.id)));
@@ -1813,9 +1987,11 @@ window.addEventListener('DOMContentLoaded',()=>{
   // Los pagos generales por alumno fueron eliminados.
   byId('select-student').addEventListener('change', () => {pendingValeRequestId='';});
   byId('cierre-fecha-v43').value=diaLocalV43();
+  byId('coop-fecha-v4326').value=fechaCoopV4326(new Date().toISOString());
+  renderResponsablesIncidenteV4326();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3.2.5 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2.6 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
