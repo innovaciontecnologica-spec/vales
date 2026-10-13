@@ -667,7 +667,7 @@
 
             </div>
 
-            <form onsubmit="saveNewStudent(event)" class="space-y-3">
+            <form id="student-register-form" onsubmit="saveNewStudent(event)" class="space-y-3" aria-busy="false">
 
                 <div>
 
@@ -709,9 +709,11 @@
 
                     <button type="button" onclick="closeNewStudentModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Cancelar</button>
 
-                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#00205B] text-white hover:bg-blue-900 shadow">Guardar Alumno</button>
+                    <button type="submit" id="save-student-btn" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#00205B] text-white hover:bg-blue-900 shadow disabled:opacity-60 disabled:cursor-not-allowed">Guardar Alumno</button>
 
                 </div>
+
+                <p id="student-save-status" role="status" aria-live="polite" class="hidden text-xs font-semibold text-blue-800 bg-blue-50 p-3 rounded-lg"></p>
 
             </form>
 
@@ -805,6 +807,7 @@ let catalogFamilias = [], catalogEstudiantes = [], catalogProductos = [];
 let valesData = [], pagosData = [], currentCart = [];
 let enviandoVale = false, guardandoProducto = false;
 let pendingValeRequestId = '';
+let guardandoAlumno = false;
 let cajaPendientes=[], cajaRecibos=[], cajaRequestId='', enviandoCobroCaja=false;
 let cajaCerradaHoy = false, reporteDiario = null, cierreRequestId = '';
 let historialValesV43 = [], historialOffsetV43 = 0, historialHayMasV43 = false, historialTotalV43 = 0;
@@ -1184,6 +1187,7 @@ function openValeReview() {
   byId('confirm-send-vale-btn').focus();
 }
 function closeValeReview() {
+  if(enviandoVale) return;
   const modal=byId('modal-review-vale');
   modal.classList.add('hidden');modal.classList.remove('flex');
 }
@@ -1194,6 +1198,7 @@ async function submitVale() {
   if (!pendingValeRequestId) pendingValeRequestId=nuevaSolicitud();
   const expectedTotal=Math.round(currentCart.reduce((s,i)=>s+i.qty*i.price,0)*100)/100;
   enviandoVale=true;byId('confirm-send-vale-btn').disabled=true;
+  byId('confirm-send-vale-btn').textContent='Enviando vale… espera un momento';
   try {
     const result=await apiPost({action:'crearVale',studentId,
       items:currentCart.map(i=>({id:i.id,qty:i.qty})),expectedTotal,requestId:pendingValeRequestId});
@@ -1201,9 +1206,9 @@ async function submitVale() {
     alert('Vale confirmado en Google Sheets. Folio: '+result.id+' | Total: '+dinero(result.vale?.total ?? expectedTotal));
     await refreshDataFromSheets();
   } catch(e) {
-    alert('NO se confirmó el vale: '+e.message+'\nSi la conexión falló, revisa Sheets antes de repetir el envío.');
+    alert('NO se pudo confirmar el vale: '+e.message+'\nNo cambies los productos ni el alumno antes de reintentar: se conservará el mismo identificador de solicitud.');
     logConsole(e.message,'error');
-  } finally {enviandoVale=false;byId('confirm-send-vale-btn').disabled=false;}
+  } finally {enviandoVale=false;byId('confirm-send-vale-btn').disabled=false;byId('confirm-send-vale-btn').innerHTML='<i class="fa-solid fa-paper-plane mr-1"></i> Confirmar y enviar';}
 }
 async function loadValesAndPagos() {
   try {
@@ -1252,18 +1257,83 @@ function renderFinanzas() {
 }
 function openNewStudentModal() {
   const family=byId('new-student-family');
+  const antes=family.value;
   family.innerHTML='<option value="NEW">+ Crear Nueva Familia</option>'+catalogFamilias.map(f=>`<option value="${textoSeguro(f.id)}">${textoSeguro(f.name)}</option>`).join('');
-  toggleNewFamilyInput('NEW');byId('modal-student').classList.remove('hidden');
+  if ([...family.options].some(op=>op.value===antes)) family.value=antes;
+  toggleNewFamilyInput(family.value);
+  byId('modal-student').classList.remove('hidden');
 }
-function closeNewStudentModal() {byId('modal-student').classList.add('hidden');}
+function closeNewStudentModal() {
+  if (guardandoAlumno) return; // No permitir cerrar mientras Sheets procesa la solicitud.
+  byId('modal-student').classList.add('hidden');
+}
 function toggleNewFamilyInput(value) {byId('new-family-input-container').classList.toggle('hidden',value!=='NEW');}
+function estadoGuardarAlumno_(mensaje, tipo='info') {
+  const el=byId('student-save-status');
+  el.textContent=mensaje;
+  el.classList.toggle('hidden',!mensaje);
+  el.className='text-xs font-semibold p-3 rounded-lg '+(
+    tipo==='error'?'text-rose-800 bg-rose-50':'text-blue-800 bg-blue-50');
+  if (!mensaje) el.classList.add('hidden');
+}
+/**
+ * El identificador persiste por pestaña incluso ante recargas o fallos de red.
+ * Mismo formulario => mismo ID hasta que el servidor confirme el alta.
+ */
+function solicitudAlumnoSegura_(datos) {
+  const clave='smartcoop_alumno_pendiente_v4325';
+  const contenido=JSON.stringify(datos);
+  let anterior=null;
+  try {anterior=JSON.parse(sessionStorage.getItem(clave)||'null');} catch (_) {}
+  if (!anterior || anterior.contenido!==contenido || Date.now()-anterior.fecha>86400000) {
+    anterior={contenido,fecha:Date.now(),requestId:nuevaSolicitud()};
+    sessionStorage.setItem(clave,JSON.stringify(anterior));
+  }
+  return anterior.requestId;
+}
 async function saveNewStudent(e) {
   e.preventDefault();
+  if (guardandoAlumno) return;
+  const form=byId('student-register-form');
+  const boton=byId('save-student-btn');
+  const datos={name:byId('new-student-name').value.trim(),
+    grado:byId('new-student-grado').value.trim(),
+    familyId:byId('new-student-family').value,
+    newFamilyName:byId('new-family-name').value.trim()};
+  if (!datos.name || !datos.grado || (datos.familyId==='NEW' && !datos.newFamilyName)) {
+    estadoGuardarAlumno_('Escribe el nombre, grado y, si corresponde, la familia.','error');
+    return;
+  }
+  const requestId=solicitudAlumnoSegura_(datos);
+  guardandoAlumno=true;
+  boton.disabled=true;
+  boton.textContent='Guardando… espera un momento';
+  form.setAttribute('aria-busy','true');
+  estadoGuardarAlumno_('Estamos registrando al alumno. No vuelvas a presionar ni cierres la página.');
   try {
-    await apiPost({action:'registrarAlumno',name:byId('new-student-name').value.trim(),grado:byId('new-student-grado').value.trim(),familyId:byId('new-student-family').value,newFamilyName:byId('new-family-name').value.trim()});
-    closeNewStudentModal();byId('new-student-name').value='';byId('new-student-grado').value='';
-    await refreshDataFromSheets();alert('Alumno registrado en Google Sheets.');
-  } catch(err) {alert('No se registró el alumno: '+err.message);}
+    const res=await apiPost({action:'registrarAlumno',...datos,requestId});
+    // Sólo una confirmación del servidor permite cerrar el formulario.
+    sessionStorage.removeItem('smartcoop_alumno_pendiente_v4325');
+    byId('new-student-name').value='';
+    byId('new-student-grado').value='';
+    byId('new-family-name').value='';
+    estadoGuardarAlumno_('Alumno confirmado en Google Sheets.');
+    // Desbloquear antes de cerrar, pero evitar otro clic al procesar el refresco.
+    byId('modal-student').classList.add('hidden');
+    alert(res.duplicado ? 'Este alumno ya estaba guardado: se recuperó el registro sin duplicarlo.' :
+      'Alumno guardado correctamente. Folio: '+res.newStudent.id);
+    await refreshDataFromSheets();
+  } catch(err) {
+    // El navegador podría haber perdido la confirmación después de que Sheets guardó.
+    // El mismo identificador será usado al pulsar reintentar.
+    estadoGuardarAlumno_('No se pudo confirmar el registro. NO crees otra familia ni cambies los datos. Puedes pulsar Guardar de nuevo: se utilizará la MISMA solicitud. '+err.message,'error');
+    logConsole('Registro de alumno sin confirmar: '+err.message,'error');
+  } finally {
+    guardandoAlumno=false;
+    boton.disabled=false;
+    boton.textContent='Guardar Alumno';
+    form.setAttribute('aria-busy','false');
+  }
 }
 // Dirección General: administrar productos sin editar manualmente Google Sheets.
 function renderAdminProducts() {
@@ -1745,7 +1815,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   byId('cierre-fecha-v43').value=diaLocalV43();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3.2.4 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2.5 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
