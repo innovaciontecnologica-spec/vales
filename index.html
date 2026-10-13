@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida | SmartCoop v4.3.2.3</title>
+    <title>Colegio Labastida | SmartCoop v4.3.2.4</title>
     <meta name="theme-color" content="#00205B">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
@@ -89,7 +89,7 @@
             <div class="smartcoop-brand-toolbar">
                 <div class="smartcoop-brand-meta">
                     <span class="smartcoop-official-label">Sistema Oficial</span>
-                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.3</span>
+                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.4</span>
                     <span class="smartcoop-brand-description">Gestión de vales, cooperativa y control de cobros</span>
                 </div>
                 <div class="smartcoop-brand-actions">
@@ -102,6 +102,12 @@
                             <div id="nav-user-name" class="font-bold text-white">---</div>
                             <div id="nav-user-role" class="text-amber-400 text-[10px] uppercase">---</div>
                         </div>
+                        <button type="button" onclick="abrirCambioClave()" class="bg-white/15 hover:bg-white/25 text-white border border-white/25 font-semibold px-3 py-2 rounded-xl transition text-xs flex items-center gap-2" title="Cambiar mi contraseña" aria-label="Cambiar mi contraseña">
+                            <i class="fa-solid fa-key" aria-hidden="true"></i><span class="hidden sm:inline">Mi contraseña</span>
+                        </button>
+                        <button id="btn-admin-claves" type="button" onclick="abrirAdminClaves()" class="hidden bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-2 rounded-xl transition text-xs items-center gap-2" title="Restablecer contraseñas de usuarios">
+                            <i class="fa-solid fa-user-shield" aria-hidden="true"></i><span class="hidden sm:inline">Claves de usuarios</span>
+                        </button>
                         <button type="button" onclick="logout()" class="bg-rose-700 hover:bg-rose-800 text-white font-bold p-2.5 rounded-xl transition text-xs" title="Cerrar Sesión" aria-label="Cerrar sesión">
                             <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
                         </button>
@@ -715,6 +721,56 @@
 
 
 
+    <!-- SmartCoop v4.3.2.4: actualización de contraseña personal -->
+    <div id="modal-cambiar-clave" class="fixed inset-0 bg-slate-950/75 hidden items-center justify-center p-4 z-[70]" role="dialog" aria-modal="true" aria-labelledby="clave-titulo">
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 space-y-4 shadow-2xl">
+        <div class="flex items-start justify-between gap-3">
+          <div><h2 id="clave-titulo" class="font-bold text-xl text-[#00205B]">Seguridad de mi cuenta</h2>
+            <p id="clave-subtitulo" class="text-slate-500 text-xs mt-1">Cambia tu contraseña cuando lo necesites.</p></div>
+          <i class="fa-solid fa-shield-halved text-[#9E1B32] text-xl" aria-hidden="true"></i>
+        </div>
+        <form id="form-cambiar-clave" onsubmit="guardarCambioClave(event)" class="space-y-3">
+          <label for="clave-actual" class="block text-xs font-bold">Contraseña actual</label>
+          <input id="clave-actual" type="password" autocomplete="current-password" maxlength="256" required class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+          <label for="clave-nueva" class="block text-xs font-bold">Nueva contraseña</label>
+          <input id="clave-nueva" type="password" autocomplete="new-password" minlength="15" maxlength="128" required class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+          <p class="text-xs text-slate-500">De 15 a 128 caracteres. Puedes usar una frase de varias palabras. Evita nombres de usuario y claves fáciles de adivinar.</p>
+          <label for="clave-repetida" class="block text-xs font-bold">Repite tu nueva contraseña</label>
+          <input id="clave-repetida" type="password" autocomplete="new-password" minlength="15" maxlength="128" required class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
+          <label class="flex items-center gap-2 text-xs text-slate-600"><input id="clave-mostrar" type="checkbox" onchange="mostrarClavesPersonales(this.checked)" /> Mostrar contraseñas</label>
+          <p id="clave-error" role="alert" aria-live="polite" class="hidden text-xs text-rose-700 font-semibold"></p>
+          <div class="flex gap-2 justify-end flex-wrap pt-2">
+            <button id="clave-cancelar" type="button" onclick="cancelarCambioClave()" class="border border-slate-300 text-slate-700 rounded-xl px-4 py-2 font-semibold text-sm">Cancelar</button>
+            <button id="clave-guardar" type="submit" class="bg-[#00205B] text-white rounded-xl px-4 py-2 font-semibold text-sm">Cambiar contraseña</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Recuperación de acceso: exclusiva de Dirección General -->
+    <div id="modal-admin-claves" class="fixed inset-0 bg-slate-950/75 hidden items-center justify-center p-4 z-[70]" role="dialog" aria-modal="true" aria-labelledby="admin-clave-titulo">
+      <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+        <h2 id="admin-clave-titulo" class="text-xl font-bold text-[#00205B]">Restablecer contraseña de usuario</h2>
+        <p class="text-xs text-slate-600">Solo Dirección General. La persona deberá cambiar la contraseña temporal al iniciar sesión. No se muestra ni recupera su contraseña anterior.</p>
+        <form onsubmit="restablecerClaveUsuario(event)" class="space-y-3">
+          <label class="block font-bold text-xs" for="admin-clave-usuario">Cuenta a restablecer</label>
+          <select id="admin-clave-usuario" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" required></select>
+          <label class="block font-bold text-xs" for="admin-clave-actual">Tu contraseña actual de Dirección General</label>
+          <input type="password" id="admin-clave-actual" autocomplete="current-password" maxlength="256" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" required />
+          <p id="admin-clave-error" role="alert" class="hidden text-xs text-rose-700 font-semibold"></p>
+          <div id="admin-clave-resultado" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2">
+            <p class="text-xs font-bold text-amber-950">Contraseña temporal (visible solo ahora). Entrégala de forma privada.</p>
+            <input id="admin-clave-temporal" readonly type="text" class="w-full font-mono border border-amber-300 rounded-lg p-2 text-sm" />
+            <button type="button" onclick="copiarClaveTemporal()" class="border border-amber-400 rounded-lg px-3 py-2 text-xs font-bold">Copiar clave temporal</button>
+          </div>
+          <div class="flex justify-end flex-wrap gap-2">
+            <button type="button" onclick="cerrarAdminClaves()" class="border border-slate-300 text-slate-700 rounded-xl px-4 py-2 text-sm font-semibold">Cerrar</button>
+            <button id="admin-clave-submit" type="submit" class="bg-[#00205B] text-white rounded-xl px-4 py-2 text-sm font-semibold">Generar clave temporal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Modal exclusivo Caja: pago vinculado a vale Entregado -->
     <div id="modal-caja-pago" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="caja-modal-title">
       <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl">
@@ -744,6 +800,7 @@
 let API_BASE = 'https://smartcoop-labastida-api.innovaciontecnologica.workers.dev';
 let currentUser = null;
 let tokenSesion = '';
+let cambioClaveObligatorio = false;
 let catalogFamilias = [], catalogEstudiantes = [], catalogProductos = [];
 let valesData = [], pagosData = [], currentCart = [];
 let enviandoVale = false, guardandoProducto = false;
@@ -889,7 +946,8 @@ async function processLogin(e) {
     tokenSesion = data.token;
     currentUser = {user:data.usuario,role:data.rol,name:data.nombre};
     byId('login-pass').value = '';
-    setupDashboardForUser();
+    setupDashboardForUser(data.requiereCambio === true);
+    if (data.requiereCambio === true) abrirCambioClave(true);
     logConsole('Acceso confirmado: ' + currentUser.name);
   } catch(e) {
     byId('login-error').classList.remove('hidden');
@@ -897,7 +955,7 @@ async function processLogin(e) {
     logConsole('No se inició sesión: ' + e.message,'error');
   }
 }
-function setupDashboardForUser() {
+function setupDashboardForUser(requiereCambio = false) {
   byId('section-login').classList.add('hidden');
   byId('section-diagnostic').classList.add('hidden');
   byId('btn-diagnostic-toggle').setAttribute('aria-expanded','false');
@@ -905,7 +963,9 @@ function setupDashboardForUser() {
   byId('user-navbar-info').classList.add('flex');
   byId('nav-user-name').textContent = currentUser.name;
   byId('nav-user-role').textContent = currentUser.role;
+  byId('btn-admin-claves').classList.toggle('hidden', currentUser.role !== 'admin');
   ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja','app-historial-v43'].forEach(i=>byId(i).classList.add('hidden'));
+  if (requiereCambio) return;
   if (['director','admin'].includes(currentUser.role)) byId('app-director').classList.remove('hidden');
   if (currentUser.role === 'cooperativa') byId('app-coop').classList.remove('hidden');
   if (['caja','admin'].includes(currentUser.role)) byId('app-caja').classList.remove('hidden');
@@ -918,6 +978,8 @@ function setupDashboardForUser() {
 }
 async function logout() {
   const oldToken = tokenSesion;
+  cambioClaveObligatorio = false;
+  cerrarCambioClave(true); cerrarAdminClaves();
   currentUser = null;tokenSesion = '';currentCart = [];
   catalogFamilias = [];catalogEstudiantes = [];catalogProductos = [];valesData = [];pagosData = [];
   ['app-director','app-coop','app-finanzas','app-admin-productos','app-caja','app-historial-v43','user-navbar-info'].forEach(i=>byId(i).classList.add('hidden'));
@@ -927,6 +989,112 @@ async function logout() {
   updateCartUI();
   if (oldToken) {tokenSesion = oldToken;try {await apiPost({action:'logout'});} catch {} finally {tokenSesion='';}}
 }
+// ================= SMARTCOOP v4.3.2.4: CONTRASEÑAS =================
+function abrirCambioClave(obligatorio = false) {
+  if (!currentUser || !tokenSesion) return;
+  cambioClaveObligatorio = obligatorio;
+  const modal = byId('modal-cambiar-clave');
+  byId('form-cambiar-clave').reset();
+  ['clave-actual','clave-nueva','clave-repetida'].forEach(id=>byId(id).type='password');
+  byId('clave-error').classList.add('hidden');
+  byId('clave-subtitulo').textContent = obligatorio
+    ? 'Debes establecer una contraseña personal antes de seguir usando SmartCoop.'
+    : 'Introduce tu contraseña actual y elige una nueva.';
+  byId('clave-cancelar').textContent = obligatorio ? 'Cerrar sesión' : 'Cancelar';
+  modal.classList.remove('hidden');modal.classList.add('flex');
+  byId('clave-actual').focus();
+}
+function cerrarCambioClave(forzar = false) {
+  if (cambioClaveObligatorio && !forzar) return;
+  const el = byId('modal-cambiar-clave');
+  if (!el) return;
+  el.classList.add('hidden');el.classList.remove('flex');
+  byId('form-cambiar-clave').reset();
+  byId('clave-error').classList.add('hidden');
+}
+function cancelarCambioClave() {
+  if (cambioClaveObligatorio) {logout();return;}
+  cerrarCambioClave();
+}
+function mostrarClavesPersonales(visible) {
+  ['clave-actual','clave-nueva','clave-repetida'].forEach(id=>byId(id).type = visible?'text':'password');
+}
+async function guardarCambioClave(e) {
+  e.preventDefault();
+  const actual = byId('clave-actual').value;
+  const nueva = byId('clave-nueva').value;
+  const repetida = byId('clave-repetida').value;
+  const error = byId('clave-error');
+  error.classList.add('hidden');
+  if (nueva.length < 15 || nueva.length > 128) {error.textContent='Utiliza una contraseña de 15 a 128 caracteres.'; error.classList.remove('hidden');return;}
+  if (nueva !== repetida) {error.textContent='La confirmación no coincide.';error.classList.remove('hidden');return;}
+  if (nueva === actual) {error.textContent='La nueva contraseña debe ser distinta.';error.classList.remove('hidden');return;}
+  const boton=byId('clave-guardar');boton.disabled=true;boton.textContent='Actualizando...';
+  try {
+    await apiPost({action:'cambiarClavePropia',claveActual:actual,nuevaClave:nueva});
+    // No conservar claves en variables, almacenamiento del navegador ni consola.
+    cambioClaveObligatorio=false;
+    cerrarCambioClave(true);
+    await logout();
+    alert('Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
+  } catch(ex) {
+    error.textContent=ex.message || 'No se pudo cambiar la contraseña.';
+    error.classList.remove('hidden');
+  } finally {boton.disabled=false;boton.textContent='Cambiar contraseña';}
+}
+async function abrirAdminClaves() {
+  if (currentUser?.role!=='admin') return;
+  const modal=byId('modal-admin-claves');
+  byId('admin-clave-error').classList.add('hidden');
+  byId('admin-clave-resultado').classList.add('hidden');
+  byId('admin-clave-actual').value='';
+  byId('admin-clave-temporal').value='';
+  modal.classList.remove('hidden');modal.classList.add('flex');
+  try {
+    const data=await apiPost({action:'listarUsuariosSeguridad'});
+    const select=byId('admin-clave-usuario');select.replaceChildren();
+    (data.usuarios||[]).filter(u=>u.activo&&u.usuario!==currentUser.user).forEach(u=>{
+      const option=document.createElement('option');
+      option.value=u.usuario;option.textContent=u.nombre+' ('+u.usuario+')';select.appendChild(option);
+    });
+    if (!select.options.length) throw new Error('No hay otras cuentas activas.');
+  } catch(e) {
+    byId('admin-clave-error').textContent=e.message;
+    byId('admin-clave-error').classList.remove('hidden');
+  }
+}
+function cerrarAdminClaves() {
+  const modal=byId('modal-admin-claves');
+  if (!modal) return;
+  modal.classList.add('hidden');modal.classList.remove('flex');
+  byId('admin-clave-actual').value='';
+  byId('admin-clave-temporal').value='';
+  byId('admin-clave-resultado').classList.add('hidden');
+}
+async function restablecerClaveUsuario(e) {
+  e.preventDefault();
+  if (currentUser?.role!=='admin') return;
+  const cuenta=byId('admin-clave-usuario').value;
+  const claveAdmin=byId('admin-clave-actual').value;
+  if (!cuenta || !claveAdmin) return;
+  if (!confirm('Se reemplazará la contraseña del usuario '+cuenta+'. Todas sus sesiones anteriores dejarán de funcionar. ¿Continuar?')) return;
+  const boton=byId('admin-clave-submit');boton.disabled=true;
+  const error=byId('admin-clave-error');error.classList.add('hidden');
+  try {
+    const data=await apiPost({action:'restablecerClaveUsuario',usuarioDestino:cuenta,claveAdminActual:claveAdmin});
+    byId('admin-clave-actual').value='';
+    byId('admin-clave-temporal').value=data.claveTemporal;
+    byId('admin-clave-resultado').classList.remove('hidden');
+    alert('Clave temporal generada. Entrégala por un canal privado; el usuario deberá cambiarla al entrar.');
+  } catch(ex) {error.textContent=ex.message;error.classList.remove('hidden');}
+  finally {boton.disabled=false;}
+}
+async function copiarClaveTemporal() {
+  const input=byId('admin-clave-temporal');
+  try {await navigator.clipboard.writeText(input.value);alert('Clave temporal copiada. No la compartas en grupos.');}
+  catch {input.select();document.execCommand('copy');alert('Selecciona y copia la clave temporal para entregarla en privado.');}
+}
+
 function renderStudentsSelect() {
   const select = byId('select-student');
   const selected = select.value;
@@ -1577,7 +1745,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   byId('cierre-fecha-v43').value=diaLocalV43();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3.2.3 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2.4 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
