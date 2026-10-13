@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida - SmartCoop v4.3.2</title>
+    <title>Colegio Labastida - SmartCoop v4.3.2.1</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -46,7 +46,7 @@
 
                     <span class="bg-[#9E1B32] text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-0.5 rounded-full">Sistema Oficial</span>
 
-                    <span class="text-[#D4AF37] text-xs font-semibold">v4.3.2</span>
+                    <span class="text-[#D4AF37] text-xs font-semibold">v4.3.2.1</span>
 
                 </div>
 
@@ -1141,7 +1141,7 @@ async function toggleProduct(id,activo) {
 // =======================================================
 // SMARTCOOP 4.2: CAJA | COBROS Y COMPROBANTES
 // =======================================================
-async function cargarCaja() {
+async function cargarCaja(actualizarReporte=true) {
   if (!['caja','admin'].includes(currentUser?.role)) return;
   try {
     const data=await apiPost({action:'getCajaPendientes'});
@@ -1420,7 +1420,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   byId('cierre-fecha-v43').value=diaLocalV43();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3.2 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2.1 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
