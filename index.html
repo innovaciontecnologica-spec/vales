@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida | SmartCoop v4.3.2.2</title>
+    <title>Colegio Labastida | SmartCoop v4.3.2.3</title>
     <meta name="theme-color" content="#00205B">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
@@ -89,7 +89,7 @@
             <div class="smartcoop-brand-toolbar">
                 <div class="smartcoop-brand-meta">
                     <span class="smartcoop-official-label">Sistema Oficial</span>
-                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.2</span>
+                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.3</span>
                     <span class="smartcoop-brand-description">Gestión de vales, cooperativa y control de cobros</span>
                 </div>
                 <div class="smartcoop-brand-actions">
@@ -535,13 +535,15 @@
           </section>
           <section class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 md:p-7 space-y-3">
             <h3 id="caja-receipts-title" class="font-bold text-lg text-[#00205B]"><i class="fa-solid fa-receipt text-[#D4AF37] mr-2"></i> Comprobantes de cobro</h3>
-            <p class="text-xs text-slate-500">Puedes reimprimir, guardar como PDF desde el navegador o compartir el resumen por WhatsApp o correo. El envío requiere seleccionar al destinatario.</p>
+            <p class="text-xs text-slate-500">Imprime o guarda cada recibo en PDF. Para reportarlo a administración, utiliza el botón verde de WhatsApp: todos los reportes van al +52 442 255 0408 y requieren pulsar Enviar.</p>
+            <div class="flex items-center gap-2 flex-wrap text-xs px-3 py-2 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i><strong>WhatsApp de reportes de Caja:</strong> +52 442 255 0408 · Recibos individuales y reportes diarios. No se envían automáticamente.</div>
             <div id="caja-recibos" class="space-y-2"></div>
           </section>
           <section id="cierre-diario-v43" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 md:p-7 space-y-4">
             <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="font-bold text-lg text-[#00205B]"><i class="fa-solid fa-calendar-check text-[#D4AF37] mr-2"></i> Corte diario de caja</h3><p class="text-xs text-slate-500">Consulta de movimientos por fecha y responsable. La confirmación bloquea nuevos cobros de esa cuenta durante el resto del día.</p></div>
-              <div class="flex flex-wrap gap-2 items-end"><label class="text-xs font-semibold">Fecha operativa <input id="cierre-fecha-v43" type="date" class="block border rounded-lg p-2 mt-1" /></label><button type="button" onclick="cargarReporteDiarioV43()" class="border rounded-lg px-3 py-2 text-xs">Actualizar</button><button type="button" onclick="imprimirCierreV43()" class="bg-[#00205B] text-white rounded-lg px-3 py-2 text-xs">Imprimir / PDF</button><button type="button" id="cierre-whatsapp-v43" onclick="enviarCorteCajaWhatsApp()" disabled aria-label="Reportar cierre diario por WhatsApp" title="Disponible cuando Caja haya confirmado su cierre" class="hidden bg-[#128C4B] text-white font-bold rounded-lg px-3 py-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-brands fa-whatsapp mr-1" aria-hidden="true"></i> Reportar cierre por WhatsApp</button></div>
+              <div class="flex flex-wrap gap-2 items-end"><label class="text-xs font-semibold">Fecha operativa <input id="cierre-fecha-v43" type="date" class="block border rounded-lg p-2 mt-1" /></label><button type="button" onclick="cargarReporteDiarioV43()" class="border rounded-lg px-3 py-2 text-xs">Actualizar</button><button type="button" onclick="imprimirCierreV43()" class="bg-[#00205B] text-white rounded-lg px-3 py-2 text-xs">Imprimir / PDF</button><button type="button" id="movimientos-whatsapp-v43" onclick="reportarMovimientosCajaWhatsApp()" class="bg-[#128C4B] text-white font-semibold rounded-lg px-3 py-2 text-xs"><i class="fa-brands fa-whatsapp mr-1" aria-hidden="true"></i> Reportar movimientos</button><button type="button" id="cierre-whatsapp-v43" onclick="enviarCorteCajaWhatsApp()" disabled aria-label="Reportar cierre diario por WhatsApp" title="Disponible cuando Caja haya confirmado su cierre" class="hidden bg-[#128C4B] text-white font-bold rounded-lg px-3 py-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-brands fa-whatsapp mr-1" aria-hidden="true"></i> Reportar cierre por WhatsApp</button></div>
             </div>
+            <p class="text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 p-2 rounded-lg"><i class="fa-brands fa-whatsapp mr-1" aria-hidden="true"></i> <strong>Reportes de Caja:</strong> todos van al +52 442 255 0408. Puedes reportar los movimientos aunque la caja siga abierta. El cierre definitivo solo se reporta después de confirmarlo. El mensaje requiere envío manual en WhatsApp.</p>
             <p id="cierre-aviso-v43" class="text-xs text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-lg"></p>
             <div id="cierre-resumen-v43" class="grid grid-cols-2 md:grid-cols-5 gap-2"></div>
             <div id="cierre-propio-v43"></div>
@@ -1211,7 +1213,7 @@ function renderCaja() {
       <span class="text-xs text-slate-500 block">${textoSeguro(r.studentName)} · ${dinero(r.amount)} · ${textoSeguro(r.valeId)}</span></div>
     <div class="flex flex-wrap gap-2">
       <button type="button" class="caja-print border rounded-lg px-3 py-1.5 text-xs" data-id="${textoSeguro(r.id)}"><i class="fa-solid fa-print mr-1"></i> Imprimir / PDF</button>
-      <button type="button" class="caja-whatsapp border rounded-lg px-3 py-1.5 text-xs" data-id="${textoSeguro(r.id)}">WhatsApp</button>
+      <button type="button" class="caja-whatsapp rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3 py-1.5 text-xs" data-id="${textoSeguro(r.id)}" title="Reportar comprobante al +52 442 255 0408"><i class="fa-brands fa-whatsapp mr-1" aria-hidden="true"></i> Reportar comprobante</button>
       <button type="button" class="caja-email border rounded-lg px-3 py-1.5 text-xs" data-id="${textoSeguro(r.id)}">Correo</button>
     </div></div>`).join(''):'<p class="text-sm text-slate-500">Aún no hay cobros registrados por esta caja.</p>';
   rs.querySelectorAll('.caja-print').forEach(btn=>btn.addEventListener('click',()=>imprimirReciboCaja(btn.dataset.id)));
@@ -1305,14 +1307,27 @@ function imprimirReciboCaja(id) {
 }
 function compartirReciboCaja(id,canal) {
   if(!['caja','admin'].includes(currentUser?.role))return;
-  const r=reciboCajaPorId(id);if(!r)return alert('Comprobante no disponible. Actualiza Caja.');
-  if(!confirm('Vas a compartir información del pago de un alumno. Comprueba que el destinatario sea su familiar autorizado. ¿Continuar?'))return;
-  const mensaje=textoReciboCaja(r);
+  const r=reciboCajaPorId(id);
+  if(!r)return alert('Comprobante no disponible. Actualiza Caja.');
   if(canal==='whatsapp') {
-    const url='https://wa.me/?text='+encodeURIComponent(mensaje);
-    const w=window.open(url,'_blank','noopener,noreferrer');
-    if(!w) alert('El navegador bloqueó la ventana de WhatsApp. Activa ventanas emergentes y vuelve a intentarlo.');
+    // Reporte institucional: folios y montos necesarios para conciliar, sin nombre del menor.
+    const texto=[
+      '*COLEGIO LABASTIDA — SMARTCOOP*',
+      '*REPORTE DE COMPROBANTE DE CAJA*','',
+      'Folio de pago: '+String(r.id||''),
+      'Folio del vale: '+String(r.valeId||''),
+      'Fecha del cobro: '+fechaReciboCaja(r.date),
+      'Importe cobrado: '+dinero(r.amount),
+      'Método: '+String(r.metodoPago||'No especificado'),
+      'Saldo del vale después del abono: '+dinero(r.saldoVale),
+      'Registró: '+String(r.registradoPor||''),
+      '', 'Comprobante administrativo registrado en Google Sheets.',
+      'Consulta el folio dentro de SmartCoop para identificar al alumno.'
+    ].join('\n');
+    abrirWhatsAppInstitucionalCaja(texto, 'comprobante '+String(r.id||''));
   } else if(canal==='email') {
+    if(!confirm('El correo contiene datos de un alumno. Verifica que lo envías exclusivamente a su familiar autorizado. ¿Continuar?'))return;
+    const mensaje=textoReciboCaja(r);
     window.location.href='mailto:?subject='+encodeURIComponent('Comprobante SmartCoop '+r.id)+'&body='+encodeURIComponent(mensaje);
   }
 }
@@ -1434,6 +1449,64 @@ async function confirmarCierreV43(ev) {
 // Destinatario institucional solicitado para reportar los cierres de Caja.
 // WhatsApp Click-to-Chat únicamente prepara el mensaje; el usuario debe pulsar Enviar.
 const WHATSAPP_REPORTE_CAJA = '524422550408';
+// Todos los reportes de Caja usan este único destinatario institucional.
+// Preparar el chat no acredita que WhatsApp haya enviado o entregado el mensaje.
+function abrirWhatsAppInstitucionalCaja(texto,descripcion) {
+  if(!['caja','admin'].includes(currentUser?.role)) return;
+  if(!texto || !String(texto).trim()) return alert('No hay datos para reportar.');
+  const detalle=String(descripcion||'reporte');
+  if(!confirm('Vas a abrir WhatsApp para reportar '+detalle+' al +52 442 255 0408.\n\nRevisa el contenido antes de pulsar Enviar. La aplicación NO envía el mensaje automáticamente. ¿Continuar?'))return;
+  const url='https://wa.me/'+WHATSAPP_REPORTE_CAJA+'?text='+encodeURIComponent(texto);
+  const ventana=window.open(url,'_blank');
+  if(ventana){try{ventana.opener=null;}catch(_){/* Protección de contexto */}}
+  else{
+    // Algunos navegadores bloquean pestañas; usar navegación en la propia pestaña.
+    window.location.assign(url);
+  }
+}
+function prepararResumenMovimientosCajaWhatsApp(reporte) {
+  if(!reporte?.propio || !reporte.fecha)throw new Error('Actualiza primero el corte diario.');
+  const propio=reporte.propio;
+  const cierre=reporte.cierrePropio;
+  const texto=[
+    '*COLEGIO LABASTIDA — SMARTCOOP*',
+    '*REPORTE DE MOVIMIENTOS DE CAJA*','',
+    'Fecha operativa: '+reporte.fecha,
+    'Responsable: '+String(currentUser?.name||'Caja'),
+    'Estado: '+(cierre?'CIERRE CONFIRMADO':'CORTE EN PROCESO (NO DEFINITIVO)'),
+    'Número de cobros: '+Number(propio.numeroPagos||0),
+    'Efectivo: '+dinero(propio.efectivo),
+    'Transferencias: '+dinero(propio.transferencia),
+    'Terminal: '+dinero(propio.terminal),
+    'Otros / sin método: '+dinero(propio.noEspecificado),
+    '*Total recibido: '+dinero(propio.total)+'*'
+  ];
+  if(cierre) {
+    texto.push('', 'Folio del cierre: '+cierre.id,
+      'Efectivo contado: '+dinero(cierre.efectivoContado),
+      'Diferencia de efectivo: '+dinero(cierre.diferencia));
+    if(String(cierre.observaciones||'').trim()) texto.push('Observaciones: '+String(cierre.observaciones).trim());
+  }
+  // Para Dirección General, el resumen es solo de SU cuenta, no el consolidado.
+  // El detalle opcional se limita a sus cobros y únicamente usa folios, no nombres.
+  const propios=Array.isArray(reporte.pagos)?reporte.pagos.filter(p=>p.usuarioCobro===currentUser?.user):[];
+  if(propios.length){
+    texto.push('', '*ÚLTIMOS COMPROBANTES DE ESTA CUENTA*');
+    propios.slice(0,10).forEach(p=>texto.push(String(p.id||'Pago sin folio')+' · '+dinero(p.amount)+' · '+String(p.metodoPago||'No especificado')));
+    if(Number(propio.numeroPagos||0)>10) texto.push('Más comprobantes disponibles en SmartCoop / Google Sheets.');
+  }
+  texto.push('', 'Reporte para conciliación interna. No sustituye un cierre definitivo ni confirma su envío.');
+  return texto.join('\n');
+}
+function reportarMovimientosCajaWhatsApp(){
+  if(!['caja','admin'].includes(currentUser?.role))return;
+  const r=reporteDiario;
+  if(!r?.propio || byId('cierre-fecha-v43').value!==r.fecha){
+    alert('Presiona Actualizar para cargar los movimientos de la fecha seleccionada.');return;
+  }
+  abrirWhatsAppInstitucionalCaja(prepararResumenMovimientosCajaWhatsApp(r),'movimientos del '+r.fecha);
+}
+
 function prepararTextoReporteCajaWhatsApp(reporte) {
   if (!reporte || !reporte.cierrePropio || !reporte.propio) {
     throw new Error('Solo se pueden reportar cierres confirmados.');
@@ -1481,16 +1554,7 @@ function enviarCorteCajaWhatsApp() {
     return;
   }
   const texto = prepararTextoReporteCajaWhatsApp(r);
-  if (!confirm('Se abrirá WhatsApp al número +52 442 255 0408 con el cierre ' +
-      r.cierrePropio.id + '.\n\nEl mensaje NO se envía automáticamente; debes revisarlo y pulsar Enviar en WhatsApp. ¿Continuar?')) return;
-  const url = 'https://wa.me/' + WHATSAPP_REPORTE_CAJA + '?text=' + encodeURIComponent(texto);
-  const ventana = window.open(url, '_blank');
-  if (ventana) {
-    try { ventana.opener = null; } catch (_) { /* otra ventana/origen */ }
-  } else {
-    // Alternativa cuando el navegador bloquea pestañas emergentes.
-    window.location.assign(url);
-  }
+  abrirWhatsAppInstitucionalCaja(texto,'cierre confirmado '+r.cierrePropio.id);
 }
 
 function imprimirCierreV43(){
@@ -1513,7 +1577,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   byId('cierre-fecha-v43').value=diaLocalV43();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3.2.2 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2.3 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
