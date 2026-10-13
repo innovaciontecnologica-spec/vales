@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida | SmartCoop v4.3.2.1</title>
+    <title>Colegio Labastida | SmartCoop v4.3.2.2</title>
     <meta name="theme-color" content="#00205B">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
@@ -89,7 +89,7 @@
             <div class="smartcoop-brand-toolbar">
                 <div class="smartcoop-brand-meta">
                     <span class="smartcoop-official-label">Sistema Oficial</span>
-                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.1</span>
+                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.2</span>
                     <span class="smartcoop-brand-description">Gestión de vales, cooperativa y control de cobros</span>
                 </div>
                 <div class="smartcoop-brand-actions">
@@ -540,7 +540,7 @@
           </section>
           <section id="cierre-diario-v43" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 md:p-7 space-y-4">
             <div class="flex flex-wrap justify-between items-center gap-3"><div><h3 class="font-bold text-lg text-[#00205B]"><i class="fa-solid fa-calendar-check text-[#D4AF37] mr-2"></i> Corte diario de caja</h3><p class="text-xs text-slate-500">Consulta de movimientos por fecha y responsable. La confirmación bloquea nuevos cobros de esa cuenta durante el resto del día.</p></div>
-              <div class="flex flex-wrap gap-2 items-end"><label class="text-xs font-semibold">Fecha operativa <input id="cierre-fecha-v43" type="date" class="block border rounded-lg p-2 mt-1" /></label><button type="button" onclick="cargarReporteDiarioV43()" class="border rounded-lg px-3 py-2 text-xs">Actualizar</button><button type="button" onclick="imprimirCierreV43()" class="bg-[#00205B] text-white rounded-lg px-3 py-2 text-xs">Imprimir / PDF</button></div>
+              <div class="flex flex-wrap gap-2 items-end"><label class="text-xs font-semibold">Fecha operativa <input id="cierre-fecha-v43" type="date" class="block border rounded-lg p-2 mt-1" /></label><button type="button" onclick="cargarReporteDiarioV43()" class="border rounded-lg px-3 py-2 text-xs">Actualizar</button><button type="button" onclick="imprimirCierreV43()" class="bg-[#00205B] text-white rounded-lg px-3 py-2 text-xs">Imprimir / PDF</button><button type="button" id="cierre-whatsapp-v43" onclick="enviarCorteCajaWhatsApp()" disabled aria-label="Reportar cierre diario por WhatsApp" title="Disponible cuando Caja haya confirmado su cierre" class="hidden bg-[#128C4B] text-white font-bold rounded-lg px-3 py-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-brands fa-whatsapp mr-1" aria-hidden="true"></i> Reportar cierre por WhatsApp</button></div>
             </div>
             <p id="cierre-aviso-v43" class="text-xs text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-lg"></p>
             <div id="cierre-resumen-v43" class="grid grid-cols-2 md:grid-cols-5 gap-2"></div>
@@ -1391,6 +1391,13 @@ function renderReporteDiarioV43(){
     ['Efectivo',all.efectivo],['Transferencia',all.transferencia],['Terminal',all.terminal],['Otros / históricos',all.noEspecificado],['Total del día',all.total]
   ].map(([label,n])=>`<div class="rounded-lg bg-slate-50 border p-3"><small class="block text-slate-500">${escV43(label)}</small><strong class="text-lg text-[#00205B]">${dinero(n)}</strong></div>`).join('');
   const closed=r.cierrePropio;
+  // El botón de reporte aparece solo en Caja y solo se habilita para cierres confirmados.
+  const btnReporteWhatsApp = byId('cierre-whatsapp-v43');
+  btnReporteWhatsApp.classList.toggle('hidden', currentUser?.role !== 'caja');
+  btnReporteWhatsApp.disabled = !closed;
+  btnReporteWhatsApp.title = closed
+    ? 'Abrir WhatsApp con el reporte del corte '+r.fecha+' para +52 442 255 0408'
+    : 'Primero confirma el cierre diario para poder reportarlo';
   byId('cierre-propio-v43').innerHTML=closed?`<div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900"><strong>Cierre confirmado: ${escV43(closed.id)}</strong><p class="text-xs mt-1">Efectivo del sistema ${dinero(closed.efectivoSistema)} · Contado ${dinero(closed.efectivoContado)} · Diferencia ${dinero(closed.diferencia)} · ${closed.numeroPagos} movimientos</p></div>`:`<p class="text-sm text-slate-500">No has confirmado el cierre de este día.</p>`;
   const permitClose=(!closed && r.fecha===r.hoy);
   byId('cierre-form-v43').classList.toggle('hidden',!permitClose);
@@ -1424,6 +1431,68 @@ async function confirmarCierreV43(ev) {
   }catch(e){alert('No se confirmó el cierre: '+e.message+'\nAntes de repetir, actualiza el reporte y verifica si se registró.');}
   finally{byId('confirmar-cierre-v43').disabled=false;}
 }
+// Destinatario institucional solicitado para reportar los cierres de Caja.
+// WhatsApp Click-to-Chat únicamente prepara el mensaje; el usuario debe pulsar Enviar.
+const WHATSAPP_REPORTE_CAJA = '524422550408';
+function prepararTextoReporteCajaWhatsApp(reporte) {
+  if (!reporte || !reporte.cierrePropio || !reporte.propio) {
+    throw new Error('Solo se pueden reportar cierres confirmados.');
+  }
+  const cierre = reporte.cierrePropio;
+  const propio = reporte.propio;
+  const filas = [
+    '*COLEGIO LABASTIDA — SMARTCOOP*',
+    '*REPORTE DE CIERRE DIARIO DE CAJA*',
+    '',
+    'Fecha operativa: ' + reporte.fecha,
+    'Responsable: ' + (cierre.responsable || currentUser?.name || 'Caja'),
+    'Folio de cierre: ' + cierre.id,
+    'Estado: CONFIRMADO',
+    '',
+    '*COBROS DEL DÍA*',
+    'Número de cobros: ' + Number(propio.numeroPagos || 0),
+    'Efectivo: ' + dinero(propio.efectivo),
+    'Transferencias: ' + dinero(propio.transferencia),
+    'Terminal: ' + dinero(propio.terminal),
+    'Otros / sin método: ' + dinero(propio.noEspecificado),
+    '*Total cobrado: ' + dinero(propio.total) + '*',
+    '',
+    '*CONCILIACIÓN DE EFECTIVO*',
+    'Efectivo esperado: ' + dinero(cierre.efectivoSistema),
+    'Efectivo contado: ' + dinero(cierre.efectivoContado),
+    'Diferencia: ' + dinero(cierre.diferencia)
+  ];
+  const observaciones = String(cierre.observaciones || '').trim();
+  if (observaciones) filas.push('Observaciones: ' + observaciones);
+  filas.push('', 'Reporte administrativo generado desde SmartCoop. Verificar contra el cierre registrado.');
+  // No se incluyen nombres de alumnos ni datos personales en un reporte general.
+  return filas.join('\n');
+}
+function enviarCorteCajaWhatsApp() {
+  if (currentUser?.role !== 'caja') return;
+  const r = reporteDiario;
+  if (!r?.cierrePropio || !r.propio) {
+    alert('Primero confirma el cierre diario y actualiza el reporte.');
+    return;
+  }
+  // Evitar compartir accidentalmente un reporte de otra fecha seleccionada.
+  if (byId('cierre-fecha-v43').value !== r.fecha) {
+    alert('Actualiza el reporte para la fecha seleccionada antes de compartirlo.');
+    return;
+  }
+  const texto = prepararTextoReporteCajaWhatsApp(r);
+  if (!confirm('Se abrirá WhatsApp al número +52 442 255 0408 con el cierre ' +
+      r.cierrePropio.id + '.\n\nEl mensaje NO se envía automáticamente; debes revisarlo y pulsar Enviar en WhatsApp. ¿Continuar?')) return;
+  const url = 'https://wa.me/' + WHATSAPP_REPORTE_CAJA + '?text=' + encodeURIComponent(texto);
+  const ventana = window.open(url, '_blank');
+  if (ventana) {
+    try { ventana.opener = null; } catch (_) { /* otra ventana/origen */ }
+  } else {
+    // Alternativa cuando el navegador bloquea pestañas emergentes.
+    window.location.assign(url);
+  }
+}
+
 function imprimirCierreV43(){
   if(!reporteDiario)return;
   const r=reporteDiario,own=r.propio,closed=r.cierrePropio;
@@ -1444,7 +1513,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   byId('cierre-fecha-v43').value=diaLocalV43();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3.2.1 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2.2 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
