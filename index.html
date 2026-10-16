@@ -8,7 +8,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Colegio Labastida | SmartCoop v4.3.2.7</title>
+    <title>Colegio Labastida | SmartCoop v4.3.2.8</title>
     <meta name="theme-color" content="#00205B">
     <link rel="icon" type="image/png" href="assets/favicon.png">
 
@@ -89,7 +89,7 @@
             <div class="smartcoop-brand-toolbar">
                 <div class="smartcoop-brand-meta">
                     <span class="smartcoop-official-label">Sistema Oficial</span>
-                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.7</span>
+                    <span class="smartcoop-brand-version">SmartCoop · v4.3.2.8</span>
                     <span class="smartcoop-brand-description">Gestión de vales, cooperativa y control de cobros</span>
                 </div>
                 <div class="smartcoop-brand-actions">
@@ -299,6 +299,7 @@
                             <option value="">-- Cargar Alumnos --</option>
 
                         </select>
+                        <div id="estado-adeudo-v4328" class="hidden mt-2 border rounded-xl px-3 py-2 text-sm" aria-live="polite"></div>
                         <div class="mt-4 border border-amber-200 bg-amber-50/70 rounded-xl p-4 space-y-3">
                           <label class="block font-bold text-xs text-[#00205B]" for="vale-tipo">Tipo de vale</label>
                           <select id="vale-tipo" class="w-full border border-amber-300 rounded-xl p-3 text-sm" onchange="cambiarTipoValeV4326()">
@@ -1218,7 +1219,7 @@ function clearCart() {
   currentCart=[];pendingValeRequestId='';updateCartUI();
 }
 
-// ------------------------ SMARTCOOP v4.3.2.7 -------------------------------
+// ------------------------ SMARTCOOP v4.3.2.8 -------------------------------
 function cambiarTipoValeV4326(){
   const panel=byId('incidente-panel');
   panel.classList.toggle('hidden',byId('vale-tipo').value!=='Incidente');
@@ -1285,12 +1286,47 @@ function renderResponsablesIncidenteV4326(){
   actualizarResumenIncidenteV4326();
 }
 
-function openValeReview() {
+let secuenciaAdeudoV4328 = 0;
+function pintarEstadoAdeudoV4328_(obj, texto, tipo) {
+  const el=byId('estado-adeudo-v4328');
+  if (!el) return;
+  if (!texto){el.className='hidden';el.textContent='';return;}
+  el.className='mt-2 border rounded-xl px-3 py-2 text-sm '+
+    (tipo==='bloqueado'?'bg-rose-50 border-rose-300 text-rose-900':
+      tipo==='error'?'bg-amber-50 border-amber-300 text-amber-900':
+      'bg-emerald-50 border-emerald-200 text-emerald-900');
+  el.textContent=texto;
+}
+async function verificarAdeudoV4328_(studentId) {
+  const seq=++secuenciaAdeudoV4328;
+  if (!studentId) {pintarEstadoAdeudoV4328_(null,'','');return null;}
+  pintarEstadoAdeudoV4328_(null,'Consultando adeudos entregados en Caja…','info');
+  try {
+    const respuesta=await apiPost({action:'verificarBloqueoValesV4328',studentId});
+    if (seq!==secuenciaAdeudoV4328 || byId('select-student').value!==studentId)return null;
+    const msg=respuesta.bloqueado
+      ? `Emisión bloqueada: ${respuesta.foliosVencidos} vale(s) o cargo(s) vencido(s), saldo $${Number(respuesta.saldoVencido).toFixed(2)}. Liquidar en Caja.`
+      : 'Sin adeudos entregados vencidos de siete días o más. Sujeto a validación al emitir.';
+    pintarEstadoAdeudoV4328_(respuesta,msg,respuesta.bloqueado?'bloqueado':'info');
+    return respuesta;
+  } catch(e) {
+    if (seq===secuenciaAdeudoV4328) pintarEstadoAdeudoV4328_(null,
+      'No se pudo consultar el adeudo: '+e.message+'. Intenta nuevamente antes de emitir.','error');
+    throw e;
+  }
+}
+async function openValeReview() {
   if (enviandoVale) return;
   const studentId=byId('select-student').value;
   const student=catalogEstudiantes.find(s=>s.id===studentId);
   if (!student) return alert('Primero selecciona un alumno.');
   if (!currentCart.length) return alert('Agrega al menos un producto.');
+  try {
+    const estado=await verificarAdeudoV4328_(studentId);
+    if (!estado || byId('select-student').value!==studentId) return;
+    if (estado.bloqueado) return alert('No se permite emitir un nuevo vale. Saldo vencido: $'+
+      Number(estado.saldoVencido).toFixed(2)+'. Acude a Caja para liquidar los vales vencidos.');
+  } catch(e) {return alert('No pudimos verificar la situación del alumno: '+e.message);}
   const content=byId('review-vale-content');
   const lines=currentCart.map(i=>`<div class="flex justify-between gap-3 border-b py-1">
     <span>${i.qty} × ${textoSeguro(i.name)}</span><strong>${dinero(i.qty*i.price)}</strong></div>`).join('');
@@ -2015,13 +2051,16 @@ function imprimirCierreV43(){
 window.addEventListener('DOMContentLoaded',()=>{
   byId('endpoint-input').value=API_BASE;
   // Los pagos generales por alumno fueron eliminados.
-  byId('select-student').addEventListener('change', () => {pendingValeRequestId='';});
+  byId('select-student').addEventListener('change', () => {
+    pendingValeRequestId='';
+    verificarAdeudoV4328_(byId('select-student').value).catch(()=>{});
+  });
   byId('cierre-fecha-v43').value=diaLocalV43();
   byId('coop-fecha-v4326').value=fechaCoopV4326(new Date().toISOString());
   renderResponsablesIncidenteV4326();
   byId('cierre-efectivo-v43').addEventListener('input',()=>{byId('cierre-efectivo-v43').dataset.edited='1';});
   byId('cierre-fecha-v43').addEventListener('change',()=>{byId('cierre-efectivo-v43').dataset.edited='';cargarReporteDiarioV43();});
-  logConsole('SmartCoop v4.3.2.7 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
+  logConsole('SmartCoop v4.3.2.8 iniciado. Historial por vale y cortes de Caja con controles de acceso.');
   updateCartUI();
   if(API_BASE)verificarConexion();
 });
